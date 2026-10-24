@@ -104,7 +104,7 @@ export default function App() {
     <ErrorBoundary t={t}>
       <Suspense fallback={<PageSkeleton label={t('common.loading')} />}>
         <Routes>
-        {/* The signed gate is public: first run creates the device key, later visits sign in.
+        {/* The signed gate is public: it opens on sign-in, with account creation one click away.
             Customer routes stay open without a session. */}
         <Route path="/login" element={<Login />} />
         <Route path="/pay/:token" element={<CustomerPay />} />
