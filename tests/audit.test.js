@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -158,6 +158,39 @@ describe('integrity-check API', () => {
     const bad = await fetch(`${b}/api/integrity-check/bad id!`);
     expect(bad.status).toBe(400);
     expect(await bad.json()).toMatchObject({ error: 'invalid-run-id' });
+    s.close();
+  });
+  it('answers wrongly shaped payloads with 400, not a server error', async () => {
+    const s = await listen(createApp({ workflowSlug: 'w', workflows: fake(), limit: { limit: 50, windowMs: 60000 } }));
+    const b = `http://127.0.0.1:${s.address().port}`;
+    for (const body of [{ invoices: 'abc' }, { invoices: [null] }, { invoices: [{ lines: 'x' }] }, { expenses: [null], payments: 5 }]) {
+      expect((await post(`${b}/api/integrity-check`, body)).status).toBe(400);
+    }
+    s.close();
+  });
+  it('sends security headers and caches fingerprinted assets only', async () => {
+    // A dot-directory in the install path (e.g. ~/.apps/harbor) used to make every page a 500.
+    const dir = join(mkdtempSync(join(tmpdir(), 'marlo-')), '.deploy');
+    mkdirSync(dir);
+    writeFileSync(join(dir, 'index.html'), '<div id="root"></div>');
+    mkdirSync(join(dir, 'assets'));
+    writeFileSync(join(dir, 'assets', 'index-abc.js'), '');
+    const s = await listen(createApp({ distDir: dir }));
+    const b = `http://127.0.0.1:${s.address().port}`;
+    const page = await fetch(`${b}/forecast`);
+    expect(page.headers.get('content-security-policy')).toContain("script-src 'self'");
+    expect(page.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(page.headers.get('cache-control')).toBe('no-cache');
+    expect((await fetch(`${b}/assets/index-abc.js`)).headers.get('cache-control')).toContain('immutable');
+    expect((await fetch(`${b}/api/health`)).headers.get('x-frame-options')).toBe('DENY');
+    s.close();
+  });
+  it('caps status polling per client', async () => {
+    const s = await listen(createApp({ workflowSlug: 'w', workflows: fake({ async getTaskRun(id) { return { id, status: 'running' }; } }), statusLimit: { limit: 2, windowMs: 60000 } }));
+    const b = `http://127.0.0.1:${s.address().port}`;
+    const codes = [];
+    for (let i = 0; i < 3; i++) codes.push((await fetch(`${b}/api/integrity-check/trn-x123`)).status);
+    expect(codes).toEqual([200, 200, 429]);
     s.close();
   });
 });
