@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Coins, Download, Languages, RotateCcw } from 'lucide-react';
+import { useState, useSyncExternalStore } from 'react';
+import { useNavigate } from 'react-router';
+import { Coins, Download, Languages, LogOut, RotateCcw } from 'lucide-react';
 import { BusinessMark } from '../components/BusinessMark.jsx';
 import { useDisplayControls } from '../components/displayControls.jsx';
 import { useErrorText } from '../hooks/useErrorText.js';
@@ -8,6 +9,7 @@ import { DEMO_DATE } from '../data/seed.js';
 import { DEFAULT_FX } from '../data/config.js';
 import { LOGO_MAX_BYTES, updateBusiness, updateExpenses, updateSettings } from '../services/actions.js';
 import { CATEGORIES } from '../services/forecasting.js';
+import { endSession, getSessionSnapshot, subscribeSession } from '../services/session.js';
 import { useStore } from '../store-context.js';
 import { addDays, isValidDate } from '../utils/dates.js';
 import { validateGstin } from '../utils/gstin.js';
@@ -40,6 +42,9 @@ export default function Settings() {
   const set =(k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
   const gst = validateGstin(f.gstin);
   const controls = useDisplayControls();
+  const navigate = useNavigate();
+  const session = useSyncExternalStore(subscribeSession, getSessionSnapshot);
+  const signOut = () => { endSession(); navigate('/login', { replace: true }); };
   const [confirmReset, setConfirmReset] = useState(false);
   const [rates, setRates] = useState(() => Object.fromEntries(['USD', 'EUR', 'JPY'].map((c) => [c, String(state.settings.fxRates?.[c] ?? DEFAULT_FX[c])])));
 
@@ -164,6 +169,12 @@ export default function Settings() {
       </Card>
       {error && <Notice tone="danger">{error}</Notice>}
       <div className="flex justify-end"><Button variant="primary" onClick={save}>{t('common.save')}</Button></div>
+      <Card title={t('session.signOut')} hint={t('session.signOutHint')}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="min-w-0 text-sm">{t('session.signedInAs', { email: session.email ?? '' })}</p>
+          <Button variant="danger" icon={LogOut} onClick={signOut}>{t('session.signOut')}</Button>
+        </div>
+      </Card>
       <Card title={t('set.privacy')}><p className="text-sm">{t('set.privacyBody')}</p></Card>
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} title={t('set.reset')}
         footer={<><Button onClick={() => setConfirmReset(false)}>{t('common.cancel')}</Button><Button variant="danger" icon={RotateCcw} onClick={() => { reset(); setConfirmReset(false); notify(t('set.resetDone')); }}>{t('set.reset')}</Button></>}>

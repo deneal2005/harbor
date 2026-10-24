@@ -5,6 +5,7 @@ import { LETTER, stateLabel, stateName } from '../data/config.js';
 import { calculateInvoice } from '../services/gst.js';
 import { adjustedOn, balanceOf, daysOverdue, isOpen, paidOn } from '../services/invoices.js';
 import { useStore } from '../store-context.js';
+import { HarborLockup } from '../components/HarborLockup.jsx';
 import { upiUri } from '../utils/upi.js';
 import { addDays } from '../utils/dates.js';
 import { amountInWords } from '../utils/money.js';
@@ -18,7 +19,13 @@ function Sheet({ children }) {
         <Link to={-1} onClick={(e) => { e.preventDefault(); window.history.back(); }} className="inline-flex min-h-12 items-center rounded-lg border border-line bg-white px-4">← {t('doc.backToApp')}</Link>
         <button type="button" onClick={() => window.print()} className="inline-flex min-h-12 items-center rounded-lg bg-brand px-4 font-medium text-white">{t('common.print')}</button>
       </div>
-      <article className="print-sheet mx-auto max-w-[210mm] bg-white p-6 text-[13px] leading-snug text-ink shadow sm:p-10">{children}</article>
+      <article className="print-sheet mx-auto max-w-[210mm] bg-white p-6 text-[13px] leading-snug text-ink shadow sm:p-10">
+        {children}
+        {/* Small Harbor lockup at the foot of every printed document (paper only). */}
+        <footer className="print-only mt-6 flex items-center border-t border-line pt-2">
+          <HarborLockup flat markClass="h-3 w-3" wordClass="text-[9px]" gapClass="gap-1.5" />
+        </footer>
+      </article>
     </div>
   );
 }
