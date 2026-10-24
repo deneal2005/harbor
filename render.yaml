@@ -1,0 +1,17 @@
+# Render Blueprint for the Harbor web service (SPA + API). Render Workflows are not yet supported in
+# Blueprints, so the workflow service is created once in the Dashboard (see README, "Render Workflow").
+services:
+  - type: web
+    name: marlo
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: WORKFLOW_SLUG
+        sync: false
+      - key: RENDER_API_KEY
+        sync: false

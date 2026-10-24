@@ -1,0 +1,92 @@
+
+ RUN  v5.0.5 C:/Users/delin/Documents/Marlo
+
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > parses all six rows 6ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 1 exact payment → high confidence on the right invoice 13ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 2 partial payment keeps the remaining balance 9ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 3 one payment for two invoices follows the listed references 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 4 a 2% shortfall on taxable value is flagged as possible TDS, not settled 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 5 an overpayment keeps the excess as unallocated customer credit 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 6 an unknown deposit goes to the unmatched queue 3ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > importing the same statement twice adds nothing 4ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > identical rows inside one file are both kept and flagged for review 1ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > nothing is paid and no cash moves until the owner confirms 25ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > a confirmed transaction cannot be confirmed twice 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > rejects malformed files with a useful error 1ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > normalises references and never confuses similar customer names 0ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > a customer payment claim stays unpaid until confirmed with evidence 5ms
+ ✓ tests/reconciliation.test.js > money already recorded is never applied twice > a bank credit for a payment recorded by hand is offered as a link, and linking adds no money 26ms
+ ✓ tests/engine.test.js > invoice states > paid invoices have zero balance and status paid 10ms
+ ✓ tests/engine.test.js > invoice states > a partial payment reduces the balance by exactly the amount 4ms
+ ✓ tests/engine.test.js > invoice states > refuses payments dated after the Demo Date 6ms
+ ✓ tests/engine.test.js > invoice states > refuses payments above the balance 2ms
+ ✓ tests/engine.test.js > invoice states > disputed invoices keep their disputed state; status follows the date 2ms
+ ✓ tests/engine.test.js > invoice states > the timeline records each action 4ms
+ ✓ tests/engine.test.js > follow-up ladder > stages come from the configured schedule and the Demo Date 2ms
+ ✓ tests/engine.test.js > follow-up ladder > never sends the same stage twice without an audited reset 4ms
+ ✓ tests/engine.test.js > follow-up ladder > disputes pause and resolution resumes 6ms
+ ✓ tests/engine.test.js > follow-up ladder > a promise pauses until the promised date, then resumes 2ms
+ ✓ tests/engine.test.js > follow-up ladder > part payments update the next reminder amount 7ms
+ ✓ tests/engine.test.js > follow-up ladder > opening a message link is logged as prepared, not sent 2ms
+ ✓ tests/engine.test.js > customer metrics > describes history and labels thin history 3ms
+ ✓ tests/engine.test.js > cash forecast > carries every closing balance into the next opening and reconciles each week 15ms
+ ✓ tests/engine.test.js > cash forecast > finds the first buffer breach from the seeded obligations 7ms
+ ✓ tests/engine.test.js > cash forecast > excludes paid and disputed invoices and counts partial balances once 9ms
+ ✓ tests/engine.test.js > cash forecast > a hypothetical collection changes the scenario only, by exactly its amount 22ms
+ ✓ tests/engine.test.js > cash forecast > a scenario date before today is treated as today, so no money vanishes 15ms
+ ✓ tests/engine.test.js > cash forecast > confirming a payment moves money from expected to cash without double counting 17ms
+ ✓ tests/engine.test.js > cash forecast > what-if: customer delay, supplier postponement and new order 24ms
+ ✓ tests/engine.test.js > cash forecast > the buffer change moves the breach 8ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > is reproducible and each score equals the sum of its factors 17ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > a large invoice due after the gap does not count toward it; a smaller earlier one does 10ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > disputed and promised invoices are outside the ordinary chase list 11ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > rankings update after payment, dispute and buffer changes 32ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > the collection plan only uses invoices that can arrive before the gap 13ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > collecting a plan invoice by the suggested date shrinks the gap by its full balance 21ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > moving the Demo Date forward changes overdue points 23ms
+ ✓ tests/engine.test.js > adding a customer > validates input, takes the state from a valid GSTIN, and can be invoiced right away 8ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > passes every check on the seeded data and reports the real first breach 32ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > sends no names, contacts, GSTINs, bank details or invoice numbers 11ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > strips unexpected fields a client might add 11ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > flags missing or non-integer fields as blocking and skips the forecast 9ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > catches negative balances and tampered totals 14ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > detects a screen that disagrees with the recomputation and duplicate imports 28ms
+ ✓ tests/audit.test.js > integrity-check API > health reports workflow configuration 79ms
+ ✓ tests/gst.test.js > money > formats Indian grouping 4ms
+ ✓ tests/gst.test.js > money > parses rupee input exactly once into paise 1ms
+ ✓ tests/gst.test.js > money > rounds half away from zero without float error 0ms
+ ✓ tests/gst.test.js > money > rejects non-integer paise 1ms
+ ✓ tests/gst.test.js > money > converts for display only, at the owner rate, and falls back to INR without a rate 3ms
+ ✓ tests/gst.test.js > GST acceptance tests > A: ₹10,000 at 18% intra-state → CGST 900 + SGST 900 = ₹11,800 2ms
+ ✓ tests/gst.test.js > GST acceptance tests > B: ₹10,000 at 18% to Gujarat → IGST 1,800 = ₹11,800 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > 3 units at ₹333 with 5% tax rounds each half and the total 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > 10% discount reduces taxable value 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > a ₹1 crore line (10,000 × ₹1,000) calculates exactly 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > zero-rated line carries no tax 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > composition business issues a Bill of Supply with no GST 0ms
+ ✓ tests/gst.test.js > GST acceptance tests > multiple lines round independently and reconcile with round-off 1ms
+ ✓ tests/gst.test.js > GST acceptance tests > rejects invalid tax rates and incomplete state information 1ms
+ ✓ tests/gst.test.js > GST acceptance tests > amount in words matches the rounded total 0ms
+ ✓ tests/gst.test.js > GSTIN validation > accepts published-format examples and every sample GSTIN 7ms
+ ✓ tests/gst.test.js > GSTIN validation > rejects bad checksum, format and length 1ms
+ ✓ tests/gst.test.js > invoice numbering > is consecutive within the financial year and restarts in a new one 1ms
+ ✓ tests/gst.test.js > invoice numbering > seed numbers are unique 2ms
+stderr | tests/audit.test.js > integrity-check API > reports start failures and failed runs without inventing a result
+startTask failed: timeout
+
+ ✓ tests/audit.test.js > integrity-check API > starts the real task slug with a minimised payload and idempotency key, then returns the report 52ms
+ ✓ tests/audit.test.js > integrity-check API > duplicate submissions reuse the same idempotency key 13ms
+ ✓ tests/audit.test.js > integrity-check API > rejects an invalid payload before calling Render 6ms
+ ✓ tests/audit.test.js > integrity-check API > reports start failures and failed runs without inventing a result 33ms
+ ✓ tests/audit.test.js > integrity-check API > says "not configured" instead of faking a run when no Render credentials exist 23ms
+ ✓ tests/audit.test.js > integrity-check API > caps integrity-check starts per client 31ms
+ ✓ tests/audit.test.js > integrity-check API > serves the app shell for deep links but not for unknown API routes 35ms
+ ✓ tests/i18n.test.js > localisation > Hindi covers every English key with the same placeholders 15ms
+ ✓ tests/i18n.test.js > localisation > every reminder template exists in both languages with the same placeholders 0ms
+ ✓ tests/i18n.test.js > localisation > the demand letter is never called a legal notice 0ms
+
+ Test Files  5 passed (5)
+      Tests  80 passed (80)
+   Start at  19:06:21
+   Duration  1.11s (tests 50%, import 33%, transform 15%, worker 2%)
+

@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', 'Noto Sans Devanagari', ui-sans-serif, system-ui, sans-serif;
+  --color-paper: #f5f6f8;
+  --color-card: #ffffff;
+  --color-ink: #0f172a;
+  --color-muted: #5b6577;
+  --color-faint: #8a94a6;
+  --color-line: #e6e8ec;
+  --color-night: #0b1220;
+  --color-brand: #0b6b66;
+  --color-brand-soft: #e6f3f1;
+  --color-gold: #f2b134;
+  --color-brand-deep: #074b47;
+  --color-danger: #c0262d;
+  --color-danger-soft: #fff1f1;
+  --color-warn: #9a5b00;
+  --color-warn-soft: #fff7e8;
+  --color-ok: #0e7a43;
+  --color-ok-soft: #eaf7ef;
+  --color-scenario: #6d3fd8;
+  --color-scenario-soft: #f3efff;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-pop: 0 12px 32px rgb(16 24 40 / 0.14), 0 2px 6px rgb(16 24 40 / 0.06);
+}
+
+html { font-size: 100%; -webkit-font-smoothing: antialiased; }
+html[data-text='large'] { font-size: 118.75%; }
+body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); font-size: 1rem; line-height: 1.55; font-feature-settings: 'cv11', 'ss01'; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -0.01em; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-brand) 55%, transparent); outline-offset: 2px; border-radius: 8px; }
+[lang='hi'] body { line-height: 1.7; }
+p, li, td, th, label, h1, h2, h3, dd, dt { overflow-wrap: anywhere; }
+input, select, textarea { font: inherit; }
+::selection { background: color-mix(in srgb, var(--color-brand) 20%, transparent); }
+
+/* Calm entrance for each screen and popover; skipped when the user prefers less motion. */
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.animate-rise { animation: rise 0.22s ease-out both; }
+.animate-fade { animation: fade 0.18s ease-out both; }
+dialog[open] { animation: rise 0.2s ease-out both; }
+
+/* Page sections arrive one after another (short and calm), like the cards in a dashboard reel. */
+.stagger > * { animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.stagger > :nth-child(2) { animation-delay: 50ms; }
+.stagger > :nth-child(3) { animation-delay: 100ms; }
+.stagger > :nth-child(4) { animation-delay: 150ms; }
+.stagger > :nth-child(n + 5) { animation-delay: 200ms; }
+
+/* Charts sweep in from left to right on first view. */
+@keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.chart-reveal { animation: reveal 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 0.15s both; }
+
+/* Notices pop in with a little spring; their timer line drains over the 9 s they stay. */
+@keyframes pop { 0% { opacity: 0; transform: translateY(-10px) scale(0.96); } 60% { opacity: 1; transform: translateY(2px) scale(1.01); } 100% { transform: none; } }
+.animate-pop { animation: pop 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.animate-drain { animation: drain 9s linear both; }
+
+/* Success tick: the circle draws, then the check. */
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.draw-stroke { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 0.5s cubic-bezier(0.6, 0, 0.2, 1) both; }
+.draw-late { animation-delay: 0.35s; animation-duration: 0.35s; }
+
+
+/* Tactile feedback: buttons press in slightly. Base layer + the separate `scale` property, so
+   Tailwind utilities (including translate-based positioning) always win and still compose. */
+@layer base {
+  button:not(:disabled):active, a.inline-flex:active { scale: 0.97; }
+  button, a.inline-flex { transition: scale 120ms ease-out, color 150ms, background-color 150ms, border-color 150ms, box-shadow 150ms; }
+}
+
+/* Progress bars fill from empty. */
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.bar-grow { transform-origin: left; animation: grow 0.8s cubic-bezier(0.3, 0.7, 0.2, 1) 0.3s both; }
+dialog::backdrop { background: rgb(11 18 32 / 0.45); backdrop-filter: blur(2px); }
+/* Animations are part of the product; data-motion="off" (low-end device, or chosen in Settings) disables them. */
+:root[data-motion='off'] *, :root[data-motion='off'] *::before, :root[data-motion='off'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+
+/* Print: only the document, on A4. */
+@page { size: A4; margin: 14mm; }
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .no-print { display: none !important; }
+  .print-sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  a { color: inherit; text-decoration: none; }
+  tr { page-break-inside: avoid; }
+}
