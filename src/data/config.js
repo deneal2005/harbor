@@ -95,5 +95,13 @@ export const RECONCILIATION = {
 
 export const LETTER = { deadlineDays: 7 };
 
+// MSMED Act, 2006 (s.15-16): payment due within the agreed period, at most 45 days from acceptance;
+// late payment carries compound interest with monthly rests at three times the RBI bank rate.
+export const MSMED = {
+  maxCreditDays: 45,
+  bankRatePct: 5.5, // RBI Bank Rate — check rbi.org.in before a demo; it changes with policy.
+  multiplier: 3,
+};
+
 // Display-only example rates (rupees per 1 unit), not live. The owner edits them in Settings.
 export const DEFAULT_FX = { USD: 88, EUR: 102, JPY: 0.58 };

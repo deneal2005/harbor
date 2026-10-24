@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { BusinessMark } from '../components/BusinessMark.jsx';
 import { Qr } from '../components/Qr.jsx';
 import { LETTER, stateLabel, stateName } from '../data/config.js';
 import { calculateInvoice } from '../services/gst.js';
+import { isMse, msmedInterest } from '../services/msmed.js';
 import { adjustedOn, balanceOf, daysOverdue, isOpen, paidOn } from '../services/invoices.js';
 import { useStore } from '../store-context.js';
 import { upiUri } from '../utils/upi.js';
@@ -120,14 +122,20 @@ export function PrintInvoice() {
 
 export function PrintLetter() {
   const { customerId } = useParams();
-  const { state, today, customer } = useStore();
+  const { state, today, customer, t } = useStore();
+  const [addInterest, setAddInterest] = useState(false);
   const en = makeT('en');
   const d = useDocT();
   const c = customer(customerId);
   if (!c) return <Sheet>Not found.</Sheet>;
   const b = state.business;
   const rows = state.invoices.filter((i) => i.customerId === c.id && isOpen(state, i) && daysOverdue(i, today) > 0).sort((a, x) => a.dueDate.localeCompare(x.dueDate));
-  const total = rows.reduce((a, i) => a + balanceOf(state, i), 0);
+  const owed = rows.reduce((a, i) => a + balanceOf(state, i), 0);
+  const mse = isMse(b);
+  const interestRows = mse ? rows.map((i) => ({ inv: i, ...msmedInterest({ principalPaise: balanceOf(state, i), invoiceDate: i.date, dueDate: i.dueDate, today }) })).filter((r) => r.interestPaise > 0) : [];
+  const interest = interestRows.reduce((a, r) => a + r.interestPaise, 0);
+  // Interest is never part of the demand unless the owner ticks the box.
+  const total = owed + (addInterest ? interest : 0);
   const deadline = addDays(today, LETTER.deadlineDays);
   return (
     <Sheet>
@@ -154,7 +162,7 @@ export function PrintLetter() {
             {rows.map((i) => (
               <tr key={i.id} className="border-b border-line"><td className="py-1">{i.number}</td><td>{fmtDate(i.date)}</td><td>{fmtDate(i.dueDate)}</td><td className="text-right">{inr(i.totalPaise)}</td><td className="text-right">{inr(paidOn(state, i.id) + adjustedOn(state, i.id))}</td><td className="text-right">{inr(balanceOf(state, i))}</td></tr>
             ))}
-            <tr className="font-bold"><td colSpan={5} className="py-1 text-right">{en('letter.totalOut')}</td><td className="text-right">{inr(total)}</td></tr>
+            <tr className="font-bold"><td colSpan={5} className="py-1 text-right">{en('letter.totalOut')}</td><td className="text-right">{inr(owed)}</td></tr>
           </tbody>
         </table>
       )}
@@ -167,7 +175,27 @@ export function PrintLetter() {
         </div>
         {total > 0 && <Qr text={upiUri(b, total, `Outstanding ${c.name}`.slice(0, 40))} label={en('print.scan')} />}
       </div>
-      {b.udyam?.registered && ['micro', 'small'].includes(b.udyam.category) && <p className="mt-3 text-[12px]">{en('letter.msme', { business: b.name, category: b.udyam.category })}</p>}
+      {mse && <p className="mt-3 text-[12px]">{en('letter.msme', { business: b.name, category: b.udyam.category })}</p>}
+      {interestRows.length > 0 && (
+        <section className="mt-3">
+          <div className="font-semibold">{d('letter.interestTitle')}</div>
+          <p className="text-[12px]">{en('letter.interestBasis', { rate: interestRows[0].annualPct.toFixed(2) })}</p>
+          <table className="mt-2 w-full border-collapse text-[12px]">
+            <thead><tr className="border-b border-ink text-left"><th className="py-1">Invoice</th><th>{en('letter.dueUnderAct')}</th><th className="text-right">{en('letter.daysLate')}</th><th className="text-right">{en('letter.remaining')}</th><th className="text-right">{en('letter.interest')}</th></tr></thead>
+            <tbody>
+              {interestRows.map((r) => (
+                <tr key={r.inv.id} className="border-b border-line"><td className="py-1">{r.inv.number}</td><td>{fmtDate(r.appointed)}</td><td className="text-right">{r.daysLate}</td><td className="text-right">{inr(balanceOf(state, r.inv))}</td><td className="text-right">{inr(r.interestPaise)}</td></tr>
+              ))}
+              <tr className="font-bold"><td colSpan={4} className="py-1 text-right">{en('letter.totalInterest')}</td><td className="text-right">{inr(interest)}</td></tr>
+            </tbody>
+          </table>
+          <p className="mt-1 text-[12px]">{en(addInterest ? 'letter.interestIncluded' : 'letter.interestExcluded')}</p>
+          <label className="no-print mt-2 flex min-h-12 items-center gap-3 rounded-lg border border-line px-3">
+            <input type="checkbox" className="h-5 w-5" checked={addInterest} onChange={(e) => setAddInterest(e.target.checked)} />
+            <span>{t('letter.addInterest')}</span>
+          </label>
+        </section>
+      )}
       <p className="mt-4">{en('letter.sign')}</p>
       <p className="mt-8">{b.owner}<br />{b.name}</p>
       <p className="mt-3 text-[12px]">{en('letter.disputes', { owner: b.owner, phone: b.phone })}</p>
