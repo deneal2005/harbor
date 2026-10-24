@@ -79,11 +79,27 @@ dialog::backdrop { background: rgb(11 18 32 / 0.45); backdrop-filter: blur(2px);
 /* Animations are part of the product; data-motion="off" (low-end device, or chosen in Settings) disables them. */
 :root[data-motion='off'] *, :root[data-motion='off'] *::before, :root[data-motion='off'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 
+/* Brand wordmark from the logo kit: Sora, bold, wide-tracked capitals.
+   Letter-spacing trails the last cap, so compensated with a negative margin —
+   otherwise centered lockups (print footers, the customer page) sit a hair off true center. */
+.brand-word {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-synthesis: none;
+  margin-right: -0.14em;
+}
+
+/* Hidden on screen, shown on paper (small Harbor lockup at the foot of printed documents). */
+.print-only { display: none; }
+
 /* Print: only the document, on A4. */
 @page { size: A4; margin: 14mm; }
 @media print {
   body { background: #fff; font-size: 11pt; }
   .no-print { display: none !important; }
+  .print-only { display: block; }
   .print-sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
   a { color: inherit; text-decoration: none; }
   tr { page-break-inside: avoid; }

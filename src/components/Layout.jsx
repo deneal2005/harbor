@@ -6,6 +6,7 @@ import {
 import { useDisplayControls } from './displayControls.jsx';
 import { useStore } from '../store-context.js';
 import { cx } from '../utils/cx.js';
+import { HarborMark } from './HarborMark.jsx';
 import { SearchBox } from './Search.jsx';
 import { CountMoney } from './ui.jsx';
 import { isLowEndDevice } from '../utils/device.js';
@@ -75,27 +76,18 @@ function Nav({ onNavigate }) {
   );
 }
 
-// Harbor mark: a coin ring with a gold arc for money coming back in. Same drawing as public/favicon.svg.
-function Logo({ className }) {
-  return (
-    <svg viewBox="0 0 32 32" className={cx('shrink-0', className)} aria-hidden="true">
-      <rect width="32" height="32" rx="9" fill="#0b6b66" />
-      <circle cx="16" cy="16" r="8.5" fill="none" stroke="#fff" strokeWidth="3.2" />
-      <path d="M16 7.5A8.5 8.5 0 0 1 24.5 16" fill="none" stroke="#f2b134" strokeWidth="3.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Brand() {
+// Harbor brand: mark + Sora wordmark. The whole lockup links home (the dashboard).
+function Brand({ onNavigate }) {
   const { t, state } = useStore();
   return (
-    <div className="flex items-center gap-3 px-2">
-      <Logo className="h-9 w-9" />
+    <Link to="/" onClick={onNavigate} title={t('nav.dashboard')}
+      className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/20">
+      <HarborMark decorative className="h-9 w-9" />
       <div className="min-w-0">
-        <div className="text-lg font-semibold leading-tight tracking-tight text-white">Harbor</div>
+        <div className="brand-word text-lg leading-tight text-white">HARBOR</div>
         <div className="truncate text-xs text-white/50">{state.business.name} · {t('app.demoChip')}</div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -194,8 +186,11 @@ export default function Layout() {
         <header className="no-print sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur-md">
           <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2 lg:hidden">
-              <Logo className="h-8 w-8" />
-              <span className="hidden min-[400px]:inline text-lg font-semibold tracking-tight">Harbor</span>
+              <Link to="/" title={t('nav.dashboard')}
+                className="inline-flex items-center gap-2 rounded-xl text-[#0F2D3F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-inset">
+                <HarborMark decorative className="h-8 w-8" />
+                <span className="brand-word hidden min-[400px]:inline text-sm">HARBOR</span>
+              </Link>
               <div className="ml-1">{controls.language({ size: 'sm' })}</div>
             </div>
             <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
@@ -243,7 +238,7 @@ export default function Layout() {
         <div className="no-print fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label={t('nav.more')}>
           <div className="animate-fade absolute inset-0 bg-night/50 backdrop-blur-[2px]" onClick={() => setMore(null)} />
           <div className="animate-rise absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-night px-4 pb-8 pt-4">
-            <div className="mb-5 flex items-center justify-between"><Brand /><button type="button" onClick={() => setMore(null)} aria-label={t('app.close')} className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/80 hover:bg-white/10"><X size={20} /></button></div>
+            <div className="mb-5 flex items-center justify-between"><Brand onNavigate={() => setMore(null)} /><button type="button" onClick={() => setMore(null)} aria-label={t('app.close')} className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/80 hover:bg-white/10"><X size={20} /></button></div>
             <Nav onNavigate={() => setMore(null)} />
             <div className="mt-6 space-y-3 rounded-2xl bg-white/[0.05] p-3">
               <div className="flex items-center justify-between gap-2"><span className="text-sm text-white/60">{t('app.currency')}</span>{controls.currency({ dark: true })}</div>
