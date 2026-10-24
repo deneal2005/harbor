@@ -1,6 +1,6 @@
 // The signed-out face of Harbor: the opening screen from the brand previews as a
-// real, working gate. First run offers creating the device key (local-first: the
-// password digest never leaves the browser); later visits ask for it. The opening
+// real, working gate. It opens on sign-in and switches to creating an account (local-first: the
+// password digest never leaves the browser). The opening
 // choreography skips for ?state=login, reduced motion, low-end devices, hidden tabs
 // and one key press — every visitor reaches the settled page within moments.
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
