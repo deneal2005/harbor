@@ -172,7 +172,8 @@ export default function Dashboard() {
           <p className="font-medium">{t('intro.pitch')}</p>
           <ol className="mt-3 grid gap-2 sm:grid-cols-5">
             {tour.steps.map((s, i) => (
-              <li key={s.key}>
+              // Phones show only the next step (progress bar below shows the rest); sm+ shows all five.
+              <li key={s.key} className={cx(i !== tour.steps.findIndex((x) => !x.done) && 'hidden sm:block')}>
                 <Link to={s.to} className={cx('group flex h-full items-start gap-2 rounded-xl px-2.5 py-2 text-sm ring-1 ring-inset transition', s.done ? 'bg-white/70 text-ink/60 ring-ok/20' : 'bg-white ring-brand/15 hover:-translate-y-0.5 hover:ring-brand/40 hover:shadow-sm')}>
                   <span className={cx('mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[0.7rem] font-semibold', s.done ? 'animate-pop bg-ok text-white' : 'bg-brand-soft text-brand')}>
                     {s.done ? <CircleCheck size={13} aria-hidden="true" /> : i + 1}
@@ -228,7 +229,8 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <div className="min-w-0 space-y-4">
+        {/* On phones the next action comes before the chart; on lg+ it sits in the right column. */}
+        <div className="order-first min-w-0 space-y-4 lg:order-none">
           {first || ranking.ranked[0] ? <NextAction pick={first || ranking.ranked[0]} fb={fb} plan={plan} /> : <Card><Empty>{t('fu.none')}</Empty></Card>}
           <Card title={t('dash.alsoToday')}>
           <ol className="-mx-2 space-y-0.5">

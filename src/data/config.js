@@ -13,6 +13,15 @@ export const GST = {
   eInvoiceThresholdPaise: 5_00_00_000_00,
 };
 
+// HSN/SAC digits on invoices (Notification 78/2020-CT): at least 4 up to ₹5 crore aggregate
+// turnover, at least 6 above it — the same ₹5 crore line as e-invoicing. SAC is 99xxxx.
+export const HSN = {
+  allowedLengths: [4, 6, 8],
+  minDigits: 4,
+  minDigitsAboveThreshold: 6,
+  thresholdPaise: GST.eInvoiceThresholdPaise,
+};
+
 
 export const INVOICE = {
   prefix: 'INV',
@@ -33,6 +42,9 @@ export const STATE_NAMES = {
   '35': 'Andaman & Nicobar Islands', '36': 'Telangana', '37': 'Andhra Pradesh', '38': 'Ladakh',
   '97': 'Other Territory',
 };
+// Falls back to the bare code when the name is unknown, never to a stored (possibly stale) name.
+export const stateName = (code) => STATE_NAMES[code] || String(code ?? '');
+export const stateLabel = (code) => (STATE_NAMES[code] ? `${STATE_NAMES[code]} (${code})` : String(code ?? ''));
 // [code, name] pairs for place-of-supply pickers.
 // Sorted: integer-like keys ("10") would otherwise come before "01".
 export const STATES = Object.entries(STATE_NAMES).sort(([a], [b]) => a.localeCompare(b));

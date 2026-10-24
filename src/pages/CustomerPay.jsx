@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
+import { BusinessMark } from '../components/BusinessMark.jsx';
+import { Qr } from '../components/Qr.jsx';
 import { Button, Card, Field, Money, Notice, inputCls } from '../components/ui.jsx';
 import { useErrorText } from '../hooks/useErrorText.js';
 import { customerClaim, customerMessage, raiseDispute } from '../services/actions.js';
 import { adjustedOn, balanceOf, paidOn } from '../services/invoices.js';
 import { useStore } from '../store-context.js';
 import { rupeesToPaise } from '../utils/money.js';
+import { upiUri } from '../utils/upi.js';
 
 // Customer-facing view. Same-browser simulation only: there is no shared backend.
 export default function CustomerPay() {
@@ -36,7 +39,7 @@ export default function CustomerPay() {
       <div className="mx-auto max-w-lg space-y-4 px-4 py-6">
         <p className="rounded-lg border border-warn/40 bg-warn-soft p-2 text-sm text-warn">{t('cpay.demo')}</p>
         <header className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand text-lg font-bold text-white">SP</div>
+          <BusinessMark business={b} className="h-12 w-12 rounded-lg text-lg" />
           <div className="min-w-0"><h1 className="text-xl font-semibold">{t('cpay.title', { business: b.name })}</h1><p className="text-sm text-muted">{c.name}</p></div>
         </header>
         <Card>
@@ -53,7 +56,15 @@ export default function CustomerPay() {
             <Card title={t('cpay.how')}>
               <p className="text-sm">{t('letter.bank', { bank: b.bank.name, account: b.bank.account, ifsc: b.bank.ifsc })}</p>
               <p className="text-sm">{t('letter.upi', { upi: b.upiId })}</p>
+              {/* Hidden during an open dispute: the amount itself is in question. */}
+              {!inv.dispute && (
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  <a href={upiUri(b, bal, inv.number)} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-lg bg-brand px-5 font-medium text-white"><span>{t('cpay.upiPay')}</span><span aria-hidden="true">·</span><Money paise={bal} /></a>
+                  <Qr text={upiUri(b, bal, inv.number)} label={t('print.scan')} />
+                </div>
+              )}
               <p className="mt-2 text-sm font-semibold text-warn">{t('letter.sampleWarn')}</p>
+              {!inv.dispute && <p className="text-xs text-muted">{t('cpay.upiNote', { business: b.name })}</p>}
             </Card>
             {inv.dispute && <Notice tone="scenario">{t('cpay.underDispute', { business: b.name })}</Notice>}
             {done === 'paid' && <Notice tone="ok">{t('cpay.thanksPaid', { business: b.name })}</Notice>}

@@ -4,11 +4,11 @@ Everything below was actually run on 23 Oct 2026 (real date) against the code in
 
 ## 1. Automated tests
 
-`npm test` → **80 passed, 0 failed** (5 files). Full verbose output: [`test-output.txt`](test-output.txt).
+`npm test` → **122 passed, 0 failed** (8 files, re-run 24 Oct 2026). Full verbose output: [`test-output.txt`](test-output.txt).
 
 | File | Covers |
 |---|---|
-| `tests/gst.test.js` | money formatting/parsing/rounding, GST tests A and B, 3×₹333 at 5%, discount, zero-rated, composition, multi-line round-off, invalid rates and state data, amount in words, GSTIN accept/reject, invoice numbering across financial years |
+| `tests/gst.test.js` | money formatting/parsing/rounding, GST tests A and B, 3×₹333 at 5%, discount, zero-rated, composition, multi-line round-off, invalid rates and state data, amount in words, GSTIN accept/reject, invoice numbering across financial years; HSN/SAC rules by turnover (4-digit at ₹2.4 cr passes, at ₹6 cr fails, 6-digit both, letters rejected, SAC 998912, every seeded line), `saveInvoice` blocks a bad code; state name follows the state code; bank/IFSC, Udyam category and logo type/size validation; old data without a logo still loads; initials |
 | `tests/engine.test.js` | invoice states, partial payments, disputes, timeline, ladder stages from schedule and Demo Date, no double send, audited reset, dispute/promise pause and resume, part payment in reminder amount, "prepared ≠ sent", customer metrics, forecast carry-forward and reconciliation, first breach, no paid/disputed/double counting, scenario isolation, payment moves expected → cash, what-ifs, buffer change, priority reproducibility, timing rules, exclusions, ranking updates, collection plan, collect-by date |
 | `tests/reconciliation.test.js` | all six statement cases, re-import idempotency, same-file duplicates, nothing changes before confirmation, no double confirmation, malformed files, reference normalisation, similar customer names, claim needs evidence |
 | `tests/audit.test.js` | integrity audit passes on seed and reports the real breach, payload contains no PII, field whitelist, blocking validation, negative balance and tampered totals, screen mismatch and duplicate imports; API: health, real task slug + minimised payload + idempotency key, duplicate submissions, invalid payload rejected before Render, start timeout and failed run reported (no fake result), 503 when not configured |
@@ -86,7 +86,7 @@ Not tested: real printer output, Safari/iOS, screen readers (semantic markup and
 
 ## 4. Deployment status
 
-- **Render web service:** not deployed. `render.yaml` is ready.
+- **Render web service:** deployed at https://harbor-app-g6jt.onrender.com (`/api/health` returned 200 on 24 Oct 2026). `WORKFLOW_SLUG` and `RENDER_API_KEY` are not set yet.
 - **Render Workflow:** not registered, and **no real run has happened**. `workflows/main.js` loads cleanly under Node (verified), but tasks only register on Render.
 - **Blocker:** this environment has no Render account access. The Render MCP connector is not authorized and the Render CLI is not installed. Next steps: authorize the Render connector (or use the Dashboard), push the repo, then follow README → "Set up on Render".
 - **Render bonus-track qualification is not complete** until a public URL is live and a real workflow run is recorded.
@@ -116,6 +116,18 @@ Not tested: real printer output, Safari/iOS, screen readers (semantic markup and
 - Dialogs (native `<dialog>`) for payment promise, snooze, dispute, record payment, adjustment, stage reset and reset demo. Verified: promise saved and the item left today's list; a future-dated payment is refused inside the dialog.
 - Currency: switching to USD showed ₹2,85,000 as $3,238.64 (rate 88) and the header states the rate; customer messages and documents stay in ₹.
 - An automated sweep of all 19 routes × English/Hindi (large text) at 360 px found no horizontal overflow, no untranslated keys and no error screens. One overflow found during the sweep (dashboard priority card) was fixed with `min-w-0`.
+
+## 5d. Five gap fixes (24 Oct 2026)
+
+| # | Change | Verified |
+|---|---|---|
+| 1 | Customer page: "Pay by UPI" button (`upi://` link) and QR for the remaining balance inside "How to pay", next to the sample-data warning, with a note that it is a payment request, not proof. Hidden when the balance is zero and during an open dispute. `Qr` moved to `src/components/Qr.jsx` and shared with the print pages. | Browser, 360 px, English and Hindi: button and QR visible, link carries the balance and invoice number, no horizontal scroll; disputed invoice 0062 shows neither |
+| 2 | Settings: bank name, account number, IFSC; Udyam category (only when Udyam is ticked); logo upload (PNG/JPG, max 200 KB, data URL on `business.logo`) with preview and Remove. `updateBusiness` validates all of them. Printed invoice, demand letter and customer page show the logo, or the business's initials instead of a hard-coded "SP". The app's own Harbor mark is unchanged (it is the product logo, not the business's). | Tests; browser: GIF and 250 KB file rejected with clear messages, PNG accepted, preview and Remove work, bad IFSC rejected, saved bank details appear on the invoice and letter, initials return after removal |
+| 3 | HSN/SAC validation (`src/utils/hsn.js`, threshold `HSN.thresholdPaise` = `GST.eInvoiceThresholdPaise`): digits only; 4, 6 or 8 long; 6+ above ₹5 crore; a 6-digit SAC starting 99 always passes. Inline error on New invoice, step 2 blocked, and `saveInvoice` rejects drafts and issues with a bad code. | Tests; browser (English and Hindi): "48A9" and "48191" show inline errors and Continue does not advance |
+| 4 | Printed invoice shows place of supply and the supplier state as "Maharashtra (27)" (code alone if unknown). The demand letter header derives the state name from the state code instead of the stored `state` field. | Tests; browser: after changing the state code to 24 the letter header said Gujarat |
+| 5 | 45-day "Owner review" suggestion (normal and simple language, English and Hindi): call the customer or consult a lawyer, the owner's own decision, Harbor never sends anything legal; the MSME Samadhaan line appears only for a Udyam-registered micro or small enterprise. Demand letter and the customer `review` template unchanged. | Browser, English and Hindi on Follow-ups |
+
+Not verified: a real UPI app opening the `upi://` link (desktop browsers cannot), printing on paper, and Safari/iOS. The printed invoice's item table is cramped at 360 px (it is laid out for A4); unchanged by this work.
 
 ## 6. Screen-by-screen audit
 

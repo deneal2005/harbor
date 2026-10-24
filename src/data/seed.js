@@ -23,6 +23,7 @@ export const BUSINESS = {
   email: 'rakesh@sharma-packaging.example',
   phone: '+91 90000 00000',
   bank: { name: 'Sample Bank (fictional)', account: '000000000000 (sample)', ifsc: 'SMPL0000000' },
+  logo: null, // data URL (PNG/JPG, max 200 KB) set in Settings; older saved data simply has no logo
   upiId: 'sharmapackaging@sample',
   paymentTermsDays: 30,
   invoicePrefix: 'INV',

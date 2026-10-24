@@ -58,7 +58,8 @@ function FollowUpCard({ inv, ladder }) {
       </div>
       <div className="space-y-3 px-4 pb-4 sm:px-5">
         <p className="text-sm text-muted"><span className="font-medium text-ink">{t('fu.why')}:</span> {t('fu.whyText', { stage: t(`stage.${stage.id}`), offset: offsetText })}
-          {stage.id === 'final' && ` ${t('fu.call')}`}{stage.id === 'demand' && ` ${t('fu.demandSuggest')}`}{stage.id === 'review' && ` ${t('fu.reviewSuggest')}`}</p>
+          {stage.id === 'final' && ` ${t('fu.call')}`}{stage.id === 'demand' && ` ${t('fu.demandSuggest')}`}{stage.id === 'review' && ` ${t('fu.reviewSuggest')}`}
+          {stage.id === 'review' && state.business.udyam?.registered && ['micro', 'small'].includes(state.business.udyam.category) && ` ${t('fu.reviewMsme')}`}</p>
         <div className="rounded-xl bg-paper p-3.5 ring-1 ring-inset ring-line">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-faint">{t('fu.message', { lang: lang === 'hi' ? 'हिंदी' : 'English' })}</span>

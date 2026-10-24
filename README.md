@@ -53,6 +53,8 @@ Per line: taxable = qty × rate × (1 − discount), rounded to the paisa once. 
 
 Document type follows the business registration: **Tax Invoice** (regular), **Bill of Supply** (composition), **Invoice** (unregistered). Allowed rates are configurable (`src/data/config.js`: 0, 3, 5, 18, 40). The sample uses 5% for corrugated cartons and 18% for printing services as *illustrative* rates. **Confirm the applicable rate and HSN classification on the CBIC rate schedule before real use; we have not verified them.**
 
+**HSN/SAC codes (`src/utils/hsn.js`)** must be digits only and 4, 6 or 8 long. Up to ₹5 crore aggregate turnover 4 digits are enough; above it at least 6 (the same ₹5 crore line as e-invoicing, `GST.eInvoiceThresholdPaise`). A 6-digit SAC starting 99 (services) always passes. The invoice form shows the error on the field and drafts or issues with a bad code are refused.
+
 **E-invoicing:** the invoice screen shows an e-invoicing note when the configured aggregate turnover exceeds ₹5 crore (our understanding of CBIC Notification 10/2023–Central Tax; re-verify on the official portal). Harbor never generates an IRN and labels every invoice as printable only.
 
 **GSTIN validation (`src/utils/gstin.js`)** checks the format (state code, PAN pattern, entity, `Z`, check character) and the base-36 checksum. It reproduces widely published example GSTINs. A valid result means *well-formed*, not *registered*.
@@ -82,12 +84,12 @@ A deterministic 100-point aid for ordering work. **It is not a probability of pa
 Disputed, promised, claimed-paid and stopped invoices are **not** in the chase list; they appear under "Needs review". The **collection plan** greedily takes gap-helping invoices by score until the gap is covered and states what remains. It is a heuristic scenario, not an optimal or guaranteed plan. The suggested "collect by" date is the day before cash first dips below the buffer.
 
 ### Escalation ladder (`src/services/reminders.js`)
-Default stages from the brief (editable): −3 days heads-up, due date, +7 firm, +15 final (suggest a call), +30 Payment Demand Letter, +45 owner review. Only the latest reached stage can be due; **each stage is sent at most once** unless reset with a reason. The ladder pauses for a **dispute**, an **active promise** (it resumes when the date passes unpaid), a **customer payment claim** under review, a snooze, or when the owner stops follow-ups. A partial payment lowers the amount in the next message automatically.
+Default stages from the brief (editable): −3 days heads-up, due date, +7 firm, +15 final (suggest a call), +30 Payment Demand Letter, +45 owner review. At owner review Harbor suggests calling the customer or consulting a lawyer, as the owner's own decision (Harbor never sends anything legal), and the MSME Samadhaan portal only for a Udyam-registered micro or small enterprise. Only the latest reached stage can be due; **each stage is sent at most once** unless reset with a reason. The ladder pauses for a **dispute**, an **active promise** (it resumes when the date passes unpaid), a **customer payment claim** under review, a snooze, or when the owner stops follow-ups. A partial payment lowers the amount in the next message automatically.
 
 Opening WhatsApp, email or SMS only **prepares** a message (logged as *prepared*). The owner must press **I sent it** after actually sending. Harbor sends nothing automatically.
 
 ### Customer page and Inbox
-`/pay/:token` shows the invoice, payments recorded, the remaining balance, payment instructions, and three actions: *I've already paid*, *Something's wrong*, *Send a message*. A payment claim creates an Inbox item and **never** marks the invoice paid; the owner must confirm it against evidence (or reject it with a reason). A dispute pauses reminders immediately. **Limitation:** with localStorage there is no shared backend, so this page works only in the same browser. It simulates the customer side.
+`/pay/:token` shows the invoice, payments recorded, the remaining balance, payment instructions with a **Pay by UPI** button and QR for the remaining balance (a `upi://` payment intent that proves nothing; hidden during an open dispute), and three actions: *I've already paid*, *Something's wrong*, *Send a message*. A payment claim creates an Inbox item and **never** marks the invoice paid; the owner must confirm it against evidence (or reject it with a reason). A dispute pauses reminders immediately. **Limitation:** with localStorage there is no shared backend, so this page works only in the same browser. It simulates the customer side.
 
 ### Bank reconciliation (`src/services/reconciliation.js`)
 CSV columns `date, description, reference, amount`. For each credit: extract invoice references (tolerant of `INV-26-27-0007`, `inv 26 27 0007`, …), match customer names only when every significant word matches, compare in paise, then suggest **exact / partial / multi-invoice / possible TDS / overpayment / unmatched** with a confidence level and a plain reason. Nothing changes until the owner presses **Confirm and apply**.
@@ -113,6 +115,8 @@ Print-ready A4 (browser **Save as PDF**):
 - **Evidence pack** labelling owner-confirmed, customer-submitted and system-generated items.
 
 Optional bilingual (English + Hindi) headings.
+
+Document headers use the business logo uploaded in Settings (PNG/JPG, max 200 KB, stored as a data URL) or the business's initials, and read bank name, account and IFSC from the business profile. States print as name and code ("Maharashtra (27)"), always derived from the state code so an edited code never leaves a stale name.
 
 ## What changes real data vs. what is a scenario
 
@@ -155,7 +159,7 @@ Health/readiness: `GET /api/health` → `{ ok, service, workflowConfigured }`. S
 
 ```bash
 npm install
-npm test          # 80 automated tests (vitest)
+npm test          # 122 automated tests (vitest)
 npm run build     # production build into dist/
 npm start         # serves dist/ + API on http://localhost:3000
 npm run dev       # Vite dev server on :5173 (proxies /api to :3000 if npm start is running)
@@ -187,7 +191,7 @@ Stack: React 19, Vite, Tailwind CSS 4, React Router, plain JavaScript, localStor
 
 ## Known limitations (honest list)
 
-- **Not deployed yet, and no real Workflow run yet.** Code, Blueprint and setup steps are complete; the Render deployment and a real run need account access (see `docs/TEST_REPORT.md`, "Deployment status").
+- **No real Workflow run yet.** The web service is live on Render (https://harbor-app-g6jt.onrender.com), but the Workflow service and its environment variables are not set up, so the integrity check returns 503 there (see `docs/TEST_REPORT.md`, "Deployment status").
 - **localStorage only:** data lives in one browser, unencrypted, without backup or multi-user access. Not suitable for real financial records.
 - **Customer page is same-browser only** (no shared backend).
 - **No automatic messaging.** WhatsApp/email/SMS are owner-controlled handoffs.

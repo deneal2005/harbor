@@ -2,6 +2,7 @@
 // { state } or { state, error } (state unchanged on error) and appends a Decision Trail entry.
 import { compareDates, isValidDate } from '../utils/dates.js';
 import { validateGstin } from '../utils/gstin.js';
+import { validateHsn } from '../utils/hsn.js';
 import { calculateInvoice, isStateCode } from './gst.js';
 import { balanceOf, nextInvoiceNumber } from './invoices.js';
 import { suggestMatch } from './reconciliation.js';
@@ -28,7 +29,9 @@ export function saveInvoice(state, form, { issue }) {
   if (!customer) return fail(state, 'customer');
   if (!isValidDate(form.date) || !isValidDate(form.dueDate)) return fail(state, 'date');
   if (compareDates(form.dueDate, form.date) < 0) return fail(state, 'dueBeforeDate');
-  const calc = calculateInvoice({ lines: form.lines, business: s.business, placeOfSupply: form.placeOfSupply });
+  const badHsn = form.lines.findIndex((l) => !validateHsn(l.hsn, s.business.aggregateTurnoverPaise).ok);
+  if (badHsn >= 0) return fail(state, 'hsn', { line: badHsn });
+  const calc =calculateInvoice({ lines: form.lines, business: s.business, placeOfSupply: form.placeOfSupply });
   if (!calc.ok) return fail(state, calc.error, { line: calc.line });
   const existing = form.id ? findInv(s, form.id) : null;
   if (existing && existing.status !== 'draft') return fail(state, 'alreadyIssued');
@@ -364,10 +367,26 @@ export function updateExpenses(state, expenses) {
   return { state: s };
 }
 
+const IFSC = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+const LOGO = /^data:image\/(png|jpeg);base64,/;
+export const LOGO_MAX_BYTES = 200 * 1024;
+const UDYAM_CATEGORIES = ['micro', 'small', 'medium'];
+
 export function updateBusiness(state, patch) {
   const s = draft(state);
   for (const k of ['openingBalancePaise', 'bufferPaise']) {
     if (patch[k] !== undefined && (!Number.isSafeInteger(patch[k]) || patch[k] < 0)) return fail(state, 'amount');
+  }
+  if (patch.bank !== undefined) {
+    const { name, account, ifsc } = patch.bank;
+    if (!name?.trim() || !account?.trim()) return fail(state, 'bankRequired');
+    if (!IFSC.test(ifsc ?? '')) return fail(state, 'ifsc');
+  }
+  if (patch.udyam?.registered && !UDYAM_CATEGORIES.includes(patch.udyam.category)) return fail(state, 'udyamCategory');
+  if (patch.logo) {
+    // base64 carries 3 bytes per 4 characters; checked again here because the UI is not a trust boundary.
+    if (!LOGO.test(patch.logo)) return fail(state, 'logoType');
+    if ((patch.logo.length - patch.logo.indexOf(',') - 1) * 0.75 > LOGO_MAX_BYTES) return fail(state, 'logoSize');
   }
   const before = { bufferPaise: s.business.bufferPaise, openingBalancePaise: s.business.openingBalancePaise };
   Object.assign(s.business, patch);

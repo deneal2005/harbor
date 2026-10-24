@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import QRCode from 'qrcode';
-import { LETTER, STATE_NAMES } from '../data/config.js';
+import { BusinessMark } from '../components/BusinessMark.jsx';
+import { Qr } from '../components/Qr.jsx';
+import { LETTER, stateLabel, stateName } from '../data/config.js';
 import { calculateInvoice } from '../services/gst.js';
 import { adjustedOn, balanceOf, daysOverdue, isOpen, paidOn } from '../services/invoices.js';
 import { useStore } from '../store-context.js';
@@ -9,12 +9,6 @@ import { upiUri } from '../utils/upi.js';
 import { addDays } from '../utils/dates.js';
 import { amountInWords } from '../utils/money.js';
 import { makeT } from '../i18n/translate.js';
-
-function Qr({ text, label }) {
-  const [src, setSrc] = useState(null);
-  useEffect(() => { QRCode.toDataURL(text, { margin: 1, width: 160 }).then(setSrc).catch(() => setSrc(null)); }, [text]);
-  return src ? <figure className="w-36 text-center"><img src={src} alt={label} className="mx-auto h-32 w-32" /><figcaption className="text-[10px] leading-tight text-muted">{label}</figcaption></figure> : null;
-}
 
 function Sheet({ children }) {
   const { t } = useStore();
@@ -59,9 +53,9 @@ export function PrintInvoice() {
       <SampleBanner />
       <header className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-ink pb-3">
         <div>
-          <div className="flex h-10 w-10 items-center justify-center rounded bg-brand text-lg font-bold text-white">SP</div>
+          <BusinessMark business={b} className="h-10 w-10 text-lg" />
           <div className="mt-1 text-lg font-bold">{b.name}</div>
-          <div>{b.address}, {STATE_NAMES[b.stateCode] || b.state || ''} ({b.stateCode})</div>
+          <div>{b.address}, {stateLabel(b.stateCode)}</div>
           {b.registrationType !== 'unregistered' && <div>GSTIN: {b.gstin}</div>}
           <div>{b.phone} · {b.email}</div>
         </div>
@@ -77,7 +71,7 @@ export function PrintInvoice() {
         <div><div className="font-semibold">{d('print.billTo')}</div><div>{c.name}</div><div>{inv.billingAddress}</div>{c.gstin && <div>GSTIN: {c.gstin}</div>}</div>
         <div>
           {inv.deliveryAddress && <><div className="font-semibold">{d('print.shipTo')}</div><div>{inv.deliveryAddress}</div></>}
-          <div>{d('print.place')}: {inv.placeOfSupply}</div>
+          <div>{d('print.place')}: {stateLabel(inv.placeOfSupply)}</div>
           <div>{d('print.reverse')}: {inv.reverseCharge ? 'Yes' : 'No'}</div>
         </div>
       </section>
@@ -139,8 +133,9 @@ export function PrintLetter() {
     <Sheet>
       <SampleBanner />
       <header className="border-b border-line pb-3">
-        <div className="text-lg font-bold">{b.name}</div>
-        <div>{b.address}, {b.state} · GSTIN {b.gstin}</div>
+        <BusinessMark business={b} className="h-10 w-10 text-lg" />
+        <div className="mt-1 text-lg font-bold">{b.name}</div>
+        <div>{b.address}, {stateName(b.stateCode)} · GSTIN {b.gstin}</div>
         <div>{b.phone} · {b.email}</div>
       </header>
       <h1 className="mt-4 text-xl font-bold">{d('letter.title')}</h1>

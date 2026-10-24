@@ -2,6 +2,7 @@
 // duplicates the real validation in gl/calculateInvoice + saveInvoice — every submit still runs
 // through the full engine; these checks just stop the user advancing with obviously incomplete data.
 import { isValidDate } from '../utils/dates.js';
+import { validateHsn } from '../utils/hsn.js';
 import { rupeesToPaise } from '../utils/money.js';
 
 export const STEPS = [
@@ -11,7 +12,7 @@ export const STEPS = [
 ];
 
 // Returns an array of error codes (translated with err.* by the caller). Empty array = step OK.
-export function stepProblems(form, step, calc) {
+export function stepProblems(form, step, calc, turnoverPaise = 0) {
   if (step === 1) {
     const p = [];
     if (!form.customerId) p.push('customer');
@@ -24,6 +25,7 @@ export function stepProblems(form, step, calc) {
     if (!form.lines.length) p.push('noLines');
     form.lines.forEach((l, i) => {
       if (!l.description.trim()) p.push({ code: 'descRequired', line: i });
+      if (!validateHsn(l.hsn, turnoverPaise).ok) p.push({ code: 'hsn', line: i });
       const rate = rupeesToPaise(l.rate);
       if (rate === null || rate <= 0) p.push({ code: 'rateRequired', line: i });
     });

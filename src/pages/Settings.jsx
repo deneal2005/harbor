@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Coins, Download, Languages, RotateCcw } from 'lucide-react';
+import { BusinessMark } from '../components/BusinessMark.jsx';
 import { useDisplayControls } from '../components/displayControls.jsx';
+import { useErrorText } from '../hooks/useErrorText.js';
 import { Button, Card, Dialog, Field, Notice, Page, Segmented, inputCls } from '../components/ui.jsx';
 import { DEMO_DATE } from '../data/seed.js';
 import { DEFAULT_FX } from '../data/config.js';
-import { updateBusiness, updateExpenses, updateSettings } from '../services/actions.js';
+import { LOGO_MAX_BYTES, updateBusiness, updateExpenses, updateSettings } from '../services/actions.js';
 import { CATEGORIES } from '../services/forecasting.js';
 import { useStore } from '../store-context.js';
 import { addDays, isValidDate } from '../utils/dates.js';
@@ -16,13 +18,26 @@ export default function Settings() {
   const b = state.business;
   const [f, setF] = useState(() => ({
     name: b.name, address: b.address, stateCode: b.stateCode, gstin: b.gstin, registrationType: b.registrationType, turnover: paiseToRupeeInput(b.aggregateTurnoverPaise),
-    udyam: b.udyam.registered, owner: b.owner, email: b.email, phone: b.phone, upiId: b.upiId,
+    udyam: b.udyam.registered, udyamCategory: b.udyam.category || 'micro', owner: b.owner, email: b.email, phone: b.phone, upiId: b.upiId,
+    bankName: b.bank.name, bankAccount: b.bank.account, ifsc: b.bank.ifsc, logo: b.logo ?? null,
     opening: paiseToRupeeInput(b.openingBalancePaise), balanceDate: b.balanceDate, buffer: paiseToRupeeInput(b.bufferPaise),
     assumed: paiseToRupeeInput(b.assumedWeeklySalesPaise || 0), assumedStart: String(b.assumedSalesStartDays),
   }));
   const [expenses, setExpenses] = useState(() => state.expenses.map((e) => ({ ...e, amount: paiseToRupeeInput(e.amountPaise), day: String(e.schedule.day ?? '') })));
   const [error, setError] = useState(null);
-  const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+  const [logoError, setLogoError] = useState(null);
+  const errText = useErrorText();
+  const pickLogo = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // let the same file be picked again after Remove
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type)) return setLogoError(t('err.logoType'));
+    if (file.size > LOGO_MAX_BYTES) return setLogoError(t('err.logoSize'));
+    const reader = new FileReader();
+    reader.onload = () => { setLogoError(null); setF((x) => ({ ...x, logo: reader.result })); };
+    reader.readAsDataURL(file);
+  };
+  const set =(k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
   const gst = validateGstin(f.gstin);
   const controls = useDisplayControls();
   const [confirmReset, setConfirmReset] = useState(false);
@@ -34,9 +49,11 @@ export default function Settings() {
     const exp = expenses.map((e) => ({ id: e.id, label: e.label, category: e.category, amountPaise: rupeesToPaise(e.amount), schedule: e.schedule.type === 'monthly' ? { type: 'monthly', day: Number(e.day) } : e.schedule }));
     if (exp.some((e) => e.amountPaise === null || (e.schedule.type === 'monthly' && !(e.schedule.day >= 1 && e.schedule.day <= 31)))) return setError(t('err.amount'));
     setError(null);
-    const r = run(updateBusiness, { ...money, name: f.name, address: f.address, stateCode: f.stateCode, gstin: f.gstin.toUpperCase(), registrationType: f.registrationType, udyam: { ...b.udyam, registered: f.udyam },
+    const r = run(updateBusiness, { ...money, name: f.name, address: f.address, stateCode: f.stateCode, gstin: f.gstin.toUpperCase(), registrationType: f.registrationType,
+      udyam: { ...b.udyam, registered: f.udyam, category: f.udyamCategory },
+      bank: { name: f.bankName.trim(), account: f.bankAccount.trim(), ifsc: f.ifsc.trim().toUpperCase() }, logo: f.logo,
       owner: f.owner, email: f.email, phone: f.phone, upiId: f.upiId, balanceDate: f.balanceDate, assumedSalesStartDays: Number(f.assumedStart) });
-    if (r.error) return setError(t('err.amount'));
+    if (r.error) return setError(errText(r));
     run(updateExpenses, exp);
     notify(t('set.saved'));
   };
@@ -131,7 +148,18 @@ export default function Settings() {
           {text('email', t('set.email'))}
           {text('phone', t('set.phone'))}
           {text('upiId', t('set.upi'))}
+          {text('bankName', t('set.bankName'))}
+          {text('bankAccount', t('set.bankAccount'), { inputMode: 'numeric' })}
+          {text('ifsc', t('set.ifsc'))}
           <label className="flex min-h-12 items-center gap-2"><input type="checkbox" className="h-5 w-5" checked={f.udyam} onChange={set('udyam')} />{t('set.udyam')}</label>
+          {f.udyam && <Field label={t('set.udyamCategory')}>{(p) => <select {...p} className={inputCls} value={f.udyamCategory} onChange={set('udyamCategory')}>{['micro', 'small', 'medium'].map((c) => <option key={c} value={c}>{t(`set.udyam.${c}`)}</option>)}</select>}</Field>}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <BusinessMark business={{ name: f.name, logo: f.logo }} className="h-14 w-14 text-xl" />
+          <div className="min-w-0 flex-1">
+            <Field label={t('set.logo')} hint={f.logo ? t('set.logoHint') : `${t('set.logoHint')} ${t('set.logoNone')}`} error={logoError}>{(p) => <input {...p} type="file" accept="image/png,image/jpeg" className="block w-full text-sm" onChange={pickLogo} />}</Field>
+          </div>
+          {f.logo && <Button variant="ghost" onClick={() => { setLogoError(null); setF((x) => ({ ...x, logo: null })); }}>{t('set.logoRemove')}</Button>}
         </div>
       </Card>
       {error && <Notice tone="danger">{error}</Notice>}

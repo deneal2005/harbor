@@ -12,6 +12,7 @@ import { STEPS, stepProblems } from '../services/formFlow.js';
 import { balanceOf, daysOverdue, isOpen, nextInvoiceNumber } from '../services/invoices.js';
 import { useStore } from '../store-context.js';
 import { addDays, isValidDate } from '../utils/dates.js';
+import { validateHsn } from '../utils/hsn.js';
 import { amountInWords, paiseToRupeeInput, rupeesToPaise } from '../utils/money.js';
 
 const NEW = '__new__';
@@ -58,7 +59,7 @@ export default function NewInvoice() {
   // Mobile stepper: validate the current step before advancing; form state survives the navigation.
   const goto = (next) => {
     if (next > step) {
-      const problems = stepProblems(form, step, calc.ok ? calc : null);
+      const problems = stepProblems(form, step, calc.ok ? calc : null, state.business.aggregateTurnoverPaise);
       if (problems.length) {
         const errs = {};
         for (const p of problems) {
@@ -103,6 +104,10 @@ export default function NewInvoice() {
   }
 
   const stepErr = (code) => stepErrors[code];
+  const hsnError = (code) => {
+    const v = validateHsn(code, state.business.aggregateTurnoverPaise);
+    return v.ok ? null : t(`new.hsnBad.${v.reason}`, { min: v.min });
+  };
 
   return (
     <Page title={existing ? t('new.editDraft') : t('new.title')} subtitle={`${t(`new.doc.${docType}`)} · ${t('new.number', { number: isValidDate(form.date) ? nextInvoiceNumber(state.invoices, form.date, state.business.invoicePrefix) : '—' })}`}>
@@ -170,7 +175,7 @@ export default function NewInvoice() {
                   <legend className="px-1 text-sm font-medium">#{i + 1}</legend>
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-12">
                     <Field label={t('new.desc')} className="col-span-2 md:col-span-4" error={stepErr(`descRequired-${i}`)}>{(p) => <input {...p} className={inputCls} value={l.description} onChange={setLine(i, 'description')} />}</Field>
-                    <Field label={t('new.hsn')} className="md:col-span-2">{(p) => <input {...p} className={inputCls} value={l.hsn} onChange={setLine(i, 'hsn')} />}</Field>
+                    <Field label={t('new.hsn')} className="md:col-span-2" error={hsnError(l.hsn)}>{(p) => <input {...p} inputMode="numeric" className={inputCls} value={l.hsn} onChange={setLine(i, 'hsn')} />}</Field>
                     <Field label={t('new.qty')} className="md:col-span-1">{(p) => <input {...p} inputMode="decimal" className={inputCls} value={l.qty} onChange={setLine(i, 'qty')} />}</Field>
                     <Field label={t('new.unit')} className="md:col-span-1">{(p) => <input {...p} className={inputCls} value={l.unit} onChange={setLine(i, 'unit')} />}</Field>
                     <Field label={t('new.rate')} className="md:col-span-2" error={stepErr(`rateRequired-${i}`)}>{(p) => <input {...p} inputMode="decimal" className={inputCls} value={l.rate} onChange={setLine(i, 'rate')} />}</Field>

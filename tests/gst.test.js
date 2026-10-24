@@ -4,6 +4,11 @@ import { amountInWords, formatINR, formatMoney, roundDiv, rupeesToPaise } from '
 import { validateGstin } from '../src/utils/gstin.js';
 import { nextInvoiceNumber } from '../src/services/invoices.js';
 import { buildSeed } from '../src/data/seed.js';
+import { validateHsn } from '../src/utils/hsn.js';
+import { stateLabel, stateName } from '../src/data/config.js';
+import { saveInvoice, updateBusiness } from '../src/services/actions.js';
+import { validateState } from '../src/services/storage.js';
+import { initialsOf } from '../src/utils/initials.js';
 
 const MH = { stateCode: '27', registrationType: 'regular' };
 const line = (rupees, taxRate, extra = {}) => ({ description: 'x', hsn: '4819', qty: 1, unit: 'pcs', ratePaise: rupees * 100, discountPct: 0, taxRate, ...extra });
@@ -120,5 +125,79 @@ describe('invoice numbering', () => {
   it('seed numbers are unique', () => {
     const nums = buildSeed().invoices.map((i) => i.number).filter(Boolean);
     expect(new Set(nums).size).toBe(nums.length);
+  });
+});
+
+describe('HSN/SAC validation', () => {
+  const LOW = 2_40_00_000_00; // ₹2.4 crore
+  const HIGH = 6_00_00_000_00; // ₹6 crore
+  it('4-digit HSN passes up to ₹5 crore and fails above it', () => {
+    expect(validateHsn('4819', LOW).ok).toBe(true);
+    expect(validateHsn('4819', HIGH)).toEqual({ ok: false, reason: 'short', min: 6 });
+  });
+  it('6-digit HSN passes at both turnovers', () => {
+    expect(validateHsn('481910', LOW).ok).toBe(true);
+    expect(validateHsn('481910', HIGH).ok).toBe(true);
+  });
+  it('rejects letters and other lengths', () => {
+    expect(validateHsn('48A9', LOW)).toEqual({ ok: false, reason: 'digits' });
+    expect(validateHsn('', LOW).reason).toBe('digits');
+    expect(validateHsn('48191', LOW)).toEqual({ ok: false, reason: 'length' });
+  });
+  it('a 6-digit SAC starting 99 passes at any turnover', () => {
+    expect(validateHsn('998912', LOW).ok).toBe(true);
+    expect(validateHsn('998912', HIGH).ok).toBe(true);
+  });
+  it('every seeded line passes at the seeded turnover', () => {
+    const s = buildSeed();
+    for (const inv of s.invoices) for (const l of inv.lines) expect(validateHsn(l.hsn, s.business.aggregateTurnoverPaise).ok, l.hsn).toBe(true);
+  });
+  it('saveInvoice blocks a bad code and names the line', () => {
+    const s = buildSeed();
+    const form = { customerId: s.customers[0].id, date: s.settings.demoDate, dueDate: s.settings.demoDate, creditDays: 0, placeOfSupply: '27', billingAddress: '', lines: [line(100, 18), line(100, 18, { hsn: 'abc' })] };
+    expect(saveInvoice(s, form, { issue: true })).toMatchObject({ error: 'hsn', line: 1 });
+  });
+});
+
+describe('state names on documents', () => {
+  it('labels a code with its name, falling back to the bare code', () => {
+    expect(stateLabel('27')).toBe('Maharashtra (27)');
+    expect(stateLabel('98')).toBe('98');
+    expect(stateName('24')).toBe('Gujarat');
+  });
+  it('a changed state code can never leave the old name behind', () => {
+    const r = updateBusiness(buildSeed(), { stateCode: '24' });
+    expect(r.state.business.state).toBe('Maharashtra'); // stale stored field...
+    expect(stateName(r.state.business.stateCode)).toBe('Gujarat'); // ...which documents no longer read
+  });
+});
+
+describe('business profile', () => {
+  const bank = { name: 'Bank', account: '123', ifsc: 'HDFC0001234' };
+  it('saves valid bank details and rejects a bad IFSC or missing account', () => {
+    expect(updateBusiness(buildSeed(), { bank }).state.business.bank).toEqual(bank);
+    expect(updateBusiness(buildSeed(), { bank: { ...bank, ifsc: 'HDFC1234' } }).error).toBe('ifsc');
+    expect(updateBusiness(buildSeed(), { bank: { ...bank, account: ' ' } }).error).toBe('bankRequired');
+  });
+  it('needs a Udyam category only when registered', () => {
+    expect(updateBusiness(buildSeed(), { udyam: { registered: true, category: 'large' } }).error).toBe('udyamCategory');
+    expect(updateBusiness(buildSeed(), { udyam: { registered: false } }).error).toBeUndefined();
+  });
+  it('accepts a small PNG/JPG logo, rejects other types and oversize files, and can remove it', () => {
+    const png = `data:image/png;base64,${'A'.repeat(100)}`;
+    expect(updateBusiness(buildSeed(), { logo: png }).state.business.logo).toBe(png);
+    expect(updateBusiness(buildSeed(), { logo: 'data:image/gif;base64,AAAA' }).error).toBe('logoType');
+    expect(updateBusiness(buildSeed(), { logo: `data:image/jpeg;base64,${'A'.repeat(300_000)}` }).error).toBe('logoSize');
+    expect(updateBusiness(buildSeed(), { logo: null }).state.business.logo).toBeNull();
+  });
+  it('old saved data without a logo still validates', () => {
+    const s = buildSeed();
+    delete s.business.logo;
+    expect(validateState(s)).toBeNull();
+  });
+  it('initials come from the business name', () => {
+    expect(initialsOf('Sharma Packaging')).toBe('SP');
+    expect(initialsOf('Acme')).toBe('AC');
+    expect(initialsOf('')).toBe('?');
   });
 });
