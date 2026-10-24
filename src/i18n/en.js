@@ -389,7 +389,8 @@ export default {
   'login.err.exists': 'This device already has a Harbor account.',
   'login.trust': 'Local-first and private: your books stay on your own device, always.',
   'session.signedInAs': 'Signed in as {email} on this device.',
-  'session.signOut': 'Sign out', 'session.signOutHint': 'Signing out locks this workspace behind the device key. Data stays on the device; sign in again to reach it.',
+  'session.account': 'Account',
+  'session.signOut': 'Sign out', 'session.signOutHint': 'Signing out locks this workspace behind your password. Your data stays on this device; sign in again to reach it.',
 };
 
 // "Simple language" mode (Settings): plain everyday wording for explanatory screens.
