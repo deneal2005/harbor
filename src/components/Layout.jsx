@@ -77,12 +77,17 @@ function Nav({ onNavigate }) {
 }
 
 // Harbor brand: mark + Sora wordmark. The whole lockup links home (the dashboard).
+// The dock-in intro plays once per page load (module flag set on mount), so later
+// mounts of this Brand (the "More" sheet) show the settled mark, never a replay.
+let brandDocked = false;
+
 function Brand({ onNavigate }) {
   const { t, state } = useStore();
+  useEffect(() => { brandDocked = true; }, []);
   return (
     <Link to="/" onClick={onNavigate} title={t('nav.dashboard')}
       className="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/20">
-      <HarborMark decorative className="h-9 w-9" />
+      <HarborMark decorative dock={!brandDocked} className="h-9 w-9" />
       <div className="min-w-0">
         <div className="brand-word text-lg leading-tight text-white">HARBOR</div>
         <div className="truncate text-xs text-white/50">{state.business.name} · {t('app.demoChip')}</div>
@@ -188,7 +193,7 @@ export default function Layout() {
             <div className="flex items-center gap-2 lg:hidden">
               <Link to="/" title={t('nav.dashboard')}
                 className="inline-flex items-center gap-2 rounded-xl text-[#0F2D3F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-inset">
-                <HarborMark decorative className="h-8 w-8" />
+                <HarborMark decorative dock={!brandDocked} className="h-8 w-8" />
                 <span className="brand-word hidden min-[400px]:inline text-sm">HARBOR</span>
               </Link>
               <div className="ml-1">{controls.language({ size: 'sm' })}</div>

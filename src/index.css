@@ -91,6 +91,76 @@ dialog::backdrop { background: rgb(11 18 32 / 0.45); backdrop-filter: blur(2px);
   margin-right: -0.14em;
 }
 
+/* ==========================================================================
+   Harbor mark effects (from the finalized login screen kit, see HarborMark.jsx).
+   A bare mark is the settled logo: water visible at 90%, nothing moving. The
+   hmark-dock class plays the dock-in once (horizon line -> cargo drops -> water
+   settles) and then leaves the tile bobbing and the shimmer swaying; hmark-busy
+   lifts the cargo off block by block while something runs. transform-box keeps
+   every transform on the part's own box, so one set of keyframes fits any size.
+   ========================================================================== */
+.harbor-mark .water rect { opacity: 0.9; }
+.hmark-dock .q, .hmark-dock .bk, .hmark-dock .water rect {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.hmark-dock { animation: harbor-bob 3.5s 3s ease-in-out infinite alternate; }
+
+/* Horizon: the quay is born as a thin line sweeping the tile, then tightens back */
+@keyframes harbor-hz {
+  0% { opacity: 0; transform: scale(0.05, 0.3); }
+  22% { opacity: 1; transform: scale(3.7, 0.3); }
+  64% { opacity: 1; transform: scale(3.7, 0.3); }
+  92%, 100% { opacity: 1; transform: none; }
+}
+@keyframes harbor-drop {
+  0% { opacity: 0; transform: translateY(-42px); }
+  55% { opacity: 1; }
+  80% { transform: translateY(1.5px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes harbor-wt {
+  from { opacity: 0; transform: scaleX(0.2); }
+  to { opacity: 0.9; transform: none; }
+}
+@keyframes harbor-sway {
+  0%, 100% { transform: none; }
+  50% { transform: translateX(2px); }
+}
+@keyframes harbor-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2.5px); }
+}
+@keyframes harbor-lift {
+  0%, 100% { transform: none; }
+  40% { transform: translateY(-4px); }
+}
+
+.hmark-dock .q { animation: harbor-hz 1.3s ease-in-out both; }
+.hmark-dock .b1 { animation: harbor-drop 0.45s 0.25s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .b2 { animation: harbor-drop 0.45s 0.40s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .b3 { animation: harbor-drop 0.45s 0.55s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .water rect { animation: harbor-wt 0.5s 1.15s ease-out both; }
+.hmark-dock .water { animation: harbor-sway 5s 1.8s ease-in-out infinite; }
+.hmark-busy .lf { animation: harbor-lift 1s ease-in-out infinite; }
+.hmark-busy .b1 .lf { animation-delay: 0s; }
+.hmark-busy .b2 .lf { animation-delay: 0.15s; }
+.hmark-busy .b3 .lf { animation-delay: 0.3s; }
+
+/* Reduced motion: no intro, no bob — the settled mark, at full opacity. */
+@media (prefers-reduced-motion: reduce) {
+  .hmark-dock .q, .hmark-dock .bk, .hmark-dock .water rect { opacity: 1; animation: none; }
+  .hmark-dock { animation: none; }
+  .hmark-busy .lf { animation: none; }
+}
+
+/* The app's motion kill switch must land on the same settled mark — the intro's
+   hidden start state (opacity 0) is neutralized or the tile would render empty. */
+:root[data-motion='off'] .hmark-dock .q, :root[data-motion='off'] .hmark-dock .bk, :root[data-motion='off'] .hmark-dock .water rect { opacity: 1; animation: none; }
+:root[data-motion='off'] .hmark-dock { animation: none; }
+:root[data-motion='off'] .hmark-busy .lf { animation: none; }
+
 /* Hidden on screen, shown on paper (small Harbor lockup at the foot of printed documents). */
 .print-only { display: none; }
 
