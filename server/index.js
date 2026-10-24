@@ -29,10 +29,31 @@ export function rateLimiter({ limit = 5, windowMs = 60000 } = {}) {
   };
 }
 
-export function createApp({ workflows, workflowSlug, distDir, limit } = {}) {
+// The app keeps a business's ledger in the browser, so an injected script could read all of it.
+// Styles stay 'unsafe-inline' because React style props and Google Fonts need them; scripts do not.
+const CSP = [
+  "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com", "img-src 'self' data: blob:", "connect-src 'self'",
+  "object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'",
+].join('; ');
+
+function securityHeaders(req, res, next) {
+  res.set({
+    'Content-Security-Policy': CSP,
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer', // /pay/:token links carry a token in the path
+    'X-Frame-Options': 'DENY',
+    'Strict-Transport-Security': 'max-age=15552000',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  });
+  next();
+}
+
+export function createApp({ workflows, workflowSlug, distDir, limit, statusLimit = { limit: 120, windowMs: 60000 } } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1); // Render terminates TLS in front of the service; use the client IP
+  app.use(securityHeaders);
   const configured = !!(workflows && workflowSlug);
 
   app.get('/api/health', (req, res) => res.json({ ok: true, service: 'marlo', workflowConfigured: configured }));
@@ -53,7 +74,8 @@ export function createApp({ workflows, workflowSlug, distDir, limit } = {}) {
     }
   });
 
-  app.get('/api/integrity-check/:runId', async (req, res) => {
+  // Each status read is a Render API call; the page polls every 2 s, so 120/min leaves headroom.
+  app.get('/api/integrity-check/:runId', rateLimiter(statusLimit), async (req, res) => {
     if (!RUN_ID.test(req.params.runId)) return res.status(400).json({ error: 'invalid-run-id' });
     if (!configured) return res.status(503).json({ error: 'workflow-not-configured' });
     try {
@@ -77,10 +99,14 @@ export function createApp({ workflows, workflowSlug, distDir, limit } = {}) {
   app.use((req, res, next) => (req.path.startsWith('/api') ? res.status(404).json({ error: 'not-found' }) : next()));
 
   if (distDir && existsSync(distDir)) {
-    app.use(express.static(distDir, { index: false, maxAge: '1h' }));
+    app.use(express.static(distDir, {
+      index: false, maxAge: '1h',
+      // Vite fingerprints everything under /assets, so those files never change at the same URL.
+      setHeaders: (res, path) => { if (/[\\/]assets[\\/]/.test(path)) res.set('Cache-Control', 'public, max-age=31536000, immutable'); },
+    }));
     // SPA fallback so deep links such as /pay/:token survive a refresh; anything
     // starting with /api is answered above and must never return the shell.
-    app.get(/^(?!\/api).*/, (req, res) => res.sendFile(join(distDir, 'index.html')));
+    app.get(/^(?!\/api).*/, (req, res) => res.set('Cache-Control', 'no-cache').sendFile('index.html', { root: distDir }));
   }
 
   // Body-parse failures (e.g. malformed JSON on POST) must answer as a JSON 400 instead of
@@ -103,6 +129,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.warn('RENDER_API_KEY or WORKFLOW_SLUG not set: the integrity check will report "not configured".');
   }
   const port = Number(process.env.PORT) || 3000;
-  createApp({ workflows, workflowSlug: process.env.WORKFLOW_SLUG, distDir: join(root, 'dist') })
+  const server = createApp({ workflows, workflowSlug: process.env.WORKFLOW_SLUG, distDir: join(root, 'dist') })
     .listen(port, () => console.log(`Harbor listening on :${port}`));
+  // Render sends SIGTERM on every deploy: finish in-flight requests, then exit.
+  for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => {
+    console.log(`${sig} received, closing`);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(1), 10000).unref();
+  });
 }

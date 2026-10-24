@@ -6,6 +6,8 @@ import { calculateInvoice } from './gst.js';
 import { buildForecast } from './forecasting.js';
 
 const int = (v) => Number.isSafeInteger(v);
+// Arrays of records only: a client can send any JSON, and a non-array or null entry must be dropped, not crash.
+const list = (v) => (Array.isArray(v) ? v.filter((x) => x && typeof x === 'object') : []);
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] !== undefined).map((k) => [k, o[k]]));
 
 /**
@@ -40,19 +42,19 @@ export function minimizePayload(p) {
     version: 1,
     demoDate: p?.demoDate,
     business: pick(p?.business, ['stateCode', 'registrationType', 'balanceDate', 'openingBalancePaise', 'bufferPaise', 'assumedWeeklySalesPaise', 'assumedSalesStartDays']),
-    invoices: (p?.invoices ?? []).map((i) => ({
+    invoices: list(p?.invoices).map((i) => ({
       ...pick(i, ['id', 'customerId', 'date', 'dueDate', 'placeOfSupply', 'status', 'taxablePaise', 'totalPaise', 'disputed', 'promiseDate', 'claim', 'stopped']),
-      lines: (i.lines ?? []).map((l) => pick(l, ['qty', 'ratePaise', 'discountPct', 'taxRate'])),
+      lines: list(i.lines).map((l) => pick(l, ['qty', 'ratePaise', 'discountPct', 'taxRate'])),
     })),
-    payments: (p?.payments ?? []).map((x) => pick(x, ['invoiceId', 'amountPaise', 'date'])),
-    adjustments: (p?.adjustments ?? []).map((x) => pick(x, ['invoiceId', 'amountPaise', 'date', 'type'])),
-    credits: (p?.credits ?? []).map((x) => pick(x, ['amountPaise', 'date'])),
-    expenses: (p?.expenses ?? []).map((x) => ({ ...pick(x, ['id', 'category', 'amountPaise']), schedule: pick(x.schedule, ['type', 'day', 'date']) })),
-    history: (p?.history ?? []).map((x) => pick(x, ['customerId', 'dueDate', 'paidDate'])),
-    bankTxnIds: (p?.bankTxnIds ?? []).filter((x) => typeof x === 'string').slice(0, 5000),
+    payments: list(p?.payments).map((x) => pick(x, ['invoiceId', 'amountPaise', 'date'])),
+    adjustments: list(p?.adjustments).map((x) => pick(x, ['invoiceId', 'amountPaise', 'date', 'type'])),
+    credits: list(p?.credits).map((x) => pick(x, ['amountPaise', 'date'])),
+    expenses: list(p?.expenses).map((x) => ({ ...pick(x, ['id', 'category', 'amountPaise']), schedule: pick(x.schedule, ['type', 'day', 'date']) })),
+    history: list(p?.history).map((x) => pick(x, ['customerId', 'dueDate', 'paidDate'])),
+    bankTxnIds: (Array.isArray(p?.bankTxnIds) ? p.bankTxnIds : []).filter((x) => typeof x === 'string').slice(0, 5000),
     clientSummary: p?.clientSummary ? {
       startCash: p.clientSummary.startCash,
-      weeks: (p.clientSummary.weeks ?? []).slice(0, 13).map((w) => pick(w, ['opening', 'closing', 'collections', 'assumedSales', 'outflows'])),
+      weeks: list(p.clientSummary.weeks).slice(0, 13).map((w) => pick(w, ['opening', 'closing', 'collections', 'assumedSales', 'outflows'])),
       firstBreach: p.clientSummary.firstBreach ? pick(p.clientSummary.firstBreach, ['date', 'gapPaise']) : null,
     } : null,
   };
