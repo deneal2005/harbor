@@ -97,6 +97,14 @@
 .lg-page[data-stage='settled'] .lg-l i { animation: none; transform: none; }
 
 /* ------------------------------- brand column ---------------------------- */
+/* Everything under the mark shares its centre line */
+.lg-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
 .lg-unit {
   display: flex;
   flex-direction: column;
@@ -180,12 +188,10 @@
   font-weight: 800;
   color: #0A2333;
   letter-spacing: -0.02em;
-  /* Slightly wide spacing keeps the three word groups distinct now commas are gone */
-  word-spacing: 0.18em;
   text-shadow: 0 1px 1px rgba(234, 242, 242, 0.85);
   --lg-d: 2.71s;
 }
-.lg-heading .lg-nowrap { white-space: nowrap; color: var(--lg-teal); word-spacing: 0; }
+.lg-heading .lg-nowrap { white-space: nowrap; color: var(--lg-teal); }
 
 .lg-body {
   margin: 8px 0 0;
@@ -247,7 +253,6 @@
 .lg-ig1 { --lg-d: 2.46s; }
 .lg-ig2 { --lg-d: 2.54s; }
 .lg-btn { --lg-d: 2.62s; }
-.lg-foot { --lg-d: 2.70s; }
 .lg-trustWrap { --lg-d: 2.78s; }
 
 /* High-contrast form fields */
@@ -353,9 +358,92 @@
   border: 0;
 }
 
-.lg-hint { margin: 0; font-size: 12.5px; color: var(--lg-subtle); }
+/* Visible labels, with "Forgot password?" riding on the password label's row */
+.lg-field { position: relative; display: flex; flex-direction: column; gap: 7px; }
+.lg-labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lg-label { font-size: 13px; font-weight: 650; color: var(--lg-ink); letter-spacing: -0.005em; }
+.lg-if[aria-invalid='true'] { border-color: #B3271E; box-shadow: 0 0 0 3.5px rgba(179, 39, 30, 0.08); }
+.lg-if:disabled { background: #F4F7F8; color: var(--lg-muted); }
+
+.lg-hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--lg-subtle);
+  transition: color 0.2s ease;
+}
+.lg-hint svg { opacity: 0.35; transition: opacity 0.2s ease; }
+.lg-hint.ok { color: var(--lg-teal); font-weight: 600; }
+.lg-hint.ok svg { opacity: 1; }
+
 .lg-note { margin: 0; font-size: 13px; font-weight: 550; color: var(--lg-teal); }
-.lg-formErr { margin: 0; font-size: 13.5px; font-weight: 600; color: #B3271E; }
+.lg-formErr {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #FDF1F0;
+  border: 1px solid #F3CFCB;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #B3271E;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  animation: lg-shake 0.32s ease;
+}
+.lg-formErr .lg-link { font-size: 13.5px; }
+@keyframes lg-shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Text-style actions: Forgot password?, Create a new business account, Sign in */
+.lg-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--lg-teal);
+  cursor: pointer;
+  border-radius: 4px;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.lg-link:hover { color: var(--lg-dark); text-decoration: underline; }
+.lg-link:focus-visible { outline: 2px solid var(--lg-teal); outline-offset: 2px; }
+.lg-link:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+.lg-linkSm { font-size: 12.5px; }
+
+/* Mode switch at the foot of the card */
+.lg-switch {
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid rgba(201, 216, 218, 0.7);
+  text-align: center;
+  font-size: 14px;
+  color: var(--lg-muted);
+  --lg-d: 2.70s;
+}
+
+/* Heading re-enters when switching between sign-in and create */
+.lg-swap { animation: lg-fadeUp 0.35s ease both; }
+
+.lg-arrow { transition: transform 0.2s ease; }
+.lg-btn:hover .lg-arrow { transform: translateX(3px); }
+.lg-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  animation: lg-spin 0.7s linear infinite;
+}
+@keyframes lg-spin { to { transform: rotate(360deg); } }
 
 /* Primary button, with a light sweep on hover */
 .lg-btn {
@@ -400,31 +488,6 @@
 .lg-btn.done { background-color: var(--lg-teal-soft); color: var(--lg-dark); }
 .lg-btn.done:hover { background-color: var(--lg-teal-soft); box-shadow: none; }
 .lg-check { width: 16px; height: 16px; flex-shrink: 0; }
-
-/* Card footer */
-.lg-foot {
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-
-.lg-soft {
-  font-size: 12.5px;
-  font-weight: 550;
-  color: var(--lg-subtle);
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.lg-soft:hover { color: var(--lg-dark); }
 
 /* Trust statement under the card — bare text, no pill */
 .lg-trustWrap {
@@ -471,5 +534,5 @@
     opacity: 1 !important;
     transform: none !important;
   }
-  .lg-backdrop { animation: none !important; }
+  .lg-backdrop, .lg-swap, .lg-formErr { animation: none !important; }
 }

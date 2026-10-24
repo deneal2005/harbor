@@ -5,13 +5,13 @@
 // and one key press — every visitor reaches the settled page within moments.
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
-import { Check, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useStore } from '../store-context.js';
 import { motionEnabled } from '../utils/device.js';
 import { HarborMark } from '../components/HarborMark.jsx';
 import { Button, Dialog } from '../components/ui.jsx';
 import {
-  MIN_PASSWORD_LENGTH, createCredential, credentialEmail, credentialExists,
+  MIN_PASSWORD_LENGTH, createCredential, credentialEmail,
   getSessionSnapshot, isEmail, normalizeEmail, removeCredential,
   signIn, startSession, subscribeSession, weakPassword,
 } from '../services/session.js';
@@ -35,18 +35,21 @@ export default function Login() {
     return !urlSkip && !reduced && !document.hidden && motionEnabled(state?.settings?.motion);
   });
 
-  const [mode, setMode] = useState(() => (credentialExists() ? 'signin' : 'setup'));
+  // Sign-in is the front door; a first visit is one click away via "Create a new business account".
+  const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState(() => credentialEmail() ?? '');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
   const [capsOn, setCapsOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
-  const [formErr, setFormErr] = useState(null);
+  const [formErr, setFormErr] = useState(null); // { msg, field?, to? } — `to` offers the other mode as the fix
   const [notice, setNotice] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [stage, setStage] = useState(() => (playOpen ? 'intro' : 'settled'));
   const unitRef = useRef(null);
+  const emailRef = useRef(null);
+  const pwdRef = useRef(null);
   const timers = useRef(new Set());
 
   const later = (fn, ms) => {
@@ -107,15 +110,21 @@ export default function Login() {
     };
   }, [playOpen]);
 
+  // Put the cursor on the field the error is about, once the fields are enabled again.
+  useEffect(() => {
+    if (formErr?.field) (formErr.field === 'email' ? emailRef : pwdRef).current?.focus();
+  }, [formErr]);
+
   /* ------------------------------- the gate ------------------------------- */
   const submit = async (e) => {
     e.preventDefault();
     if (busy || done) return;
     setFormErr(null);
     const clean = normalizeEmail(email);
-    if (!isEmail(clean)) return setFormErr(t('login.err.email'));
+    if (!isEmail(clean)) return setFormErr({ msg: t('login.err.email'), field: 'email' });
     const pass = String(password);
-    if (mode === 'setup' && weakPassword(pass)) return setFormErr(t('login.err.weak', { min: MIN_PASSWORD_LENGTH }));
+    if (!pass) return setFormErr({ msg: t('login.err.noPwd'), field: 'pwd' });
+    if (mode === 'setup' && weakPassword(pass)) return setFormErr({ msg: t('login.err.weak', { min: MIN_PASSWORD_LENGTH }), field: 'pwd' });
 
     setBusy(true);
     const started = Date.now();
@@ -123,20 +132,20 @@ export default function Login() {
       if (mode === 'setup') {
         const r = await createCredential({ email: clean, password: pass });
         if (!r.ok) {
-          setFormErr(r.error === 'email' ? t('login.err.email')
-            : r.error === 'exists' ? t('login.err.badLogin')
-            : r.error === 'storage' ? t('app.storageFail')
-            : t('login.err.weak', { min: MIN_PASSWORD_LENGTH }));
           setBusy(false);
-          return;
+          return setFormErr(r.error === 'email' ? { msg: t('login.err.email'), field: 'email' }
+            : r.error === 'exists' ? { msg: t('login.err.exists'), to: 'signin' }
+            : r.error === 'storage' ? { msg: t('app.storageFail') }
+            : { msg: t('login.err.weak', { min: MIN_PASSWORD_LENGTH }), field: 'pwd' });
         }
         startSession(r.email);
       } else {
         const r = await signIn(clean, pass);
         if (!r.ok) {
-          setFormErr(r.error === 'noCredential' ? t('login.err.badLogin') : t('login.err.badLogin'));
           setBusy(false);
-          return;
+          if (r.error === 'noCredential') return setFormErr({ msg: t('login.err.noAccount'), to: 'setup' });
+          setPassword('');
+          return setFormErr({ msg: t('login.err.badLogin'), field: 'pwd' });
         }
       }
       // Hold the busy pose just long enough for the rows to pulse once.
@@ -146,8 +155,17 @@ export default function Login() {
       later(() => navigate(fromTarget(loc.state?.from), { replace: true }), DONE_MS);
     } catch {
       setBusy(false);
-      setFormErr(t('app.storageFail'));
+      setFormErr({ msg: t('app.storageFail') });
     }
+  };
+
+  // Flip between signing in and creating an account; the typed email carries over.
+  const switchMode = (to) => {
+    setMode(to);
+    setFormErr(null);
+    setNotice(false);
+    setPassword('');
+    (isEmail(normalizeEmail(email)) ? pwdRef : emailRef).current?.focus();
   };
 
   // The honest "forgot" for a device-held password: remove the key, data stays,
@@ -155,9 +173,8 @@ export default function Login() {
   const removeKey = () => {
     removeCredential();
     setForgotOpen(false);
+    switchMode('setup');
     setNotice(true);
-    setMode('setup');
-    setPassword('');
   };
 
   // Unlocked on arrival? straight to the workspaces the visitor asked for.
@@ -165,6 +182,8 @@ export default function Login() {
     return <Navigate replace to={fromTarget(loc.state?.from)} />;
   }
 
+  const setup = mode === 'setup';
+  const pwdOk = !weakPassword(String(password));
   const radar = ['H', 'A', 'R', 'B', 'O', 'R'];
   const capsCheck = (e) => { if (typeof e.getModifierState === 'function') setCapsOn(e.getModifierState('CapsLock')); };
 
@@ -191,50 +210,83 @@ export default function Login() {
 
         <div className="lg-cardcol">
           <div className="lg-card">
-            <h2 className="lg-cardTitle lg-rv">{mode === 'setup' ? t('login.setupTitle') : t('login.title')}</h2>
-            <p className="lg-cardDesc lg-rv">{mode === 'setup' ? t('login.setupDesc') : t('login.desc')}</p>
+            {/* keyed on mode so the heading re-animates when the visitor switches */}
+            <div key={mode} className="lg-swap">
+              <h2 className="lg-cardTitle lg-rv">{setup ? t('login.setupTitle') : t('login.title')}</h2>
+              <p className="lg-cardDesc lg-rv">{setup ? t('login.setupDesc') : t('login.desc')}</p>
+            </div>
 
-            <form className="lg-form" noValidate onSubmit={submit}>
-              <label className="lg-vh" htmlFor="lg-email">{t('login.email')}</label>
-              <div className="lg-ig lg-rv lg-ig1">
-                <span className="lg-ii" aria-hidden="true"><Mail size={19} /></span>
-                <input id="lg-email" className="lg-if" type="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)} placeholder={t('login.emailPh')}
-                  autoComplete="email" autoFocus={mode !== 'signin'} />
+            <form className="lg-form" noValidate onSubmit={submit} aria-busy={busy}>
+              <div className="lg-field lg-rv lg-ig1">
+                <label className="lg-label" htmlFor="lg-email">{setup ? t('login.workEmail') : t('login.email')}</label>
+                <div className="lg-ig">
+                  <span className="lg-ii" aria-hidden="true"><Mail size={19} /></span>
+                  <input id="lg-email" ref={emailRef} className="lg-if" type="email" inputMode="email" value={email}
+                    onChange={(e) => { setEmail(e.target.value); if (formErr) setFormErr(null); }}
+                    placeholder={t('login.emailPh')} autoComplete="email" autoCapitalize="none" spellCheck={false}
+                    autoFocus={!email} disabled={busy || done}
+                    aria-invalid={formErr?.field === 'email' || undefined} aria-describedby={formErr ? 'lg-err' : undefined} />
+                </div>
               </div>
 
-              <label className="lg-vh" htmlFor="lg-pwd">{t('login.pwd')}</label>
-              <div className="lg-ig lg-rv lg-ig2">
-                <span className="lg-ii" aria-hidden="true"><Lock size={19} /></span>
-                <input id="lg-pwd" className="lg-if" type={show ? 'text' : 'password'} value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onKeyDown={capsCheck} onKeyUp={capsCheck} onBlur={() => setCapsOn(false)}
-                  placeholder={t('login.pwd')} autoComplete={mode === 'setup' ? 'new-password' : 'current-password'}
-                  autoFocus={mode === 'signin'} />
-                <button type="button" className="lg-eye" aria-label={show ? t('login.hidePwd') : t('login.showPwd')}
-                  aria-pressed={show} onClick={() => setShow((v) => !v)}>
-                  {show ? <EyeOff size={19} /> : <Eye size={19} />}
-                </button>
+              <div className="lg-field lg-rv lg-ig2">
+                <div className="lg-labelRow">
+                  <label className="lg-label" htmlFor="lg-pwd">{setup ? t('login.newPwd') : t('login.pwd')}</label>
+                  {!setup && (
+                    <button type="button" className="lg-link lg-linkSm" onClick={() => setForgotOpen(true)}>{t('login.forgot')}</button>
+                  )}
+                </div>
+                <div className="lg-ig">
+                  <span className="lg-ii" aria-hidden="true"><Lock size={19} /></span>
+                  <input id="lg-pwd" ref={pwdRef} className="lg-if" type={show ? 'text' : 'password'} value={password}
+                    onChange={(e) => { setPassword(e.target.value); if (formErr) setFormErr(null); }}
+                    onKeyDown={capsCheck} onKeyUp={capsCheck} onBlur={() => setCapsOn(false)}
+                    placeholder={setup ? t('login.pwdHint', { min: MIN_PASSWORD_LENGTH }) : t('login.pwdPh')}
+                    autoComplete={setup ? 'new-password' : 'current-password'}
+                    autoFocus={!!email} disabled={busy || done}
+                    aria-invalid={formErr?.field === 'pwd' || undefined}
+                    aria-describedby={[setup && 'lg-hint', formErr && 'lg-err'].filter(Boolean).join(' ') || undefined} />
+                  <button type="button" className="lg-eye" aria-label={show ? t('login.hidePwd') : t('login.showPwd')}
+                    aria-pressed={show} onClick={() => setShow((v) => !v)}>
+                    {show ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </div>
                 {capsOn && <span className="lg-caps">{t('login.capsLock')}</span>}
+                {setup && (
+                  <p id="lg-hint" className={`lg-hint${pwdOk ? ' ok' : ''}`}>
+                    <Check size={14} aria-hidden="true" />{t('login.pwdHint', { min: MIN_PASSWORD_LENGTH })}
+                  </p>
+                )}
               </div>
 
-              {mode === 'setup' && <p className="lg-hint">{t('login.pwdHint', { min: MIN_PASSWORD_LENGTH })}</p>}
-              {formErr && <p className="lg-formErr" role="alert">{formErr}</p>}
+              {formErr && (
+                <p id="lg-err" className="lg-formErr" role="alert">
+                  <span>{formErr.msg}</span>
+                  {formErr.to && (
+                    <button type="button" className="lg-link" onClick={() => switchMode(formErr.to)}>
+                      {formErr.to === 'setup' ? t('login.toSetup') : t('login.toSignin')}
+                    </button>
+                  )}
+                </p>
+              )}
               {notice && <p className="lg-note" role="status">{t('login.removedNote')}</p>}
 
-              <button type="submit" className={`lg-btn lg-rv${busy ? ' busy' : ''}${done ? ' done' : ''}`}>
-                {done && <Check size={16} className="lg-check" aria-hidden="true" />}
-                <span>{done ? t('login.done')
-                  : busy ? (mode === 'setup' ? t('login.creating') : t('login.signingIn'))
-                  : (mode === 'setup' ? t('login.create') : t('login.signin'))}</span>
+              <button type="submit" disabled={busy || done} className={`lg-btn lg-rv${busy ? ' busy' : ''}${done ? ' done' : ''}`}>
+                {done ? <Check size={16} className="lg-check" aria-hidden="true" />
+                  : busy ? <span className="lg-spin" aria-hidden="true" /> : null}
+                <span>{done ? (setup ? t('login.created') : t('login.done'))
+                  : busy ? (setup ? t('login.creating') : t('login.signingIn'))
+                  : (setup ? t('login.create') : t('login.signin'))}</span>
+                {!busy && !done && <ArrowRight size={17} className="lg-arrow" aria-hidden="true" />}
               </button>
             </form>
 
-            {mode === 'signin' && (
-              <div className="lg-foot lg-rv">
-                <button type="button" className="lg-soft" onClick={() => setForgotOpen(true)}>{t('login.forgot')}</button>
-              </div>
-            )}
+            <p className="lg-switch lg-rv">
+              <span>{setup ? t('login.haveAccount') : t('login.newHere')}</span>{' '}
+              <button type="button" className="lg-link" disabled={busy || done} onClick={() => switchMode(setup ? 'signin' : 'setup')}>
+                {setup ? t('login.toSignin') : t('login.toSetup')}
+              </button>
+            </p>
           </div>
 
           <div className="lg-trustWrap lg-rv">
