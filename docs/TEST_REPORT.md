@@ -4,7 +4,7 @@ Everything below was actually run on 23 Oct 2026 (real date) against the code in
 
 ## 1. Automated tests
 
-`npm test` → **122 passed, 0 failed** (8 files, re-run 24 Oct 2026). Full verbose output: [`test-output.txt`](test-output.txt).
+`npm test` → **125 passed, 0 failed** (8 files, re-run 24 Oct 2026). Full verbose output: [`test-output.txt`](test-output.txt).
 
 | File | Covers |
 |---|---|

@@ -4,73 +4,78 @@
  ✓ tests/reconciliation.test.js > bank statement reconciliation > parses all six rows 5ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > rejects future-dated rows when the demo date is given 1ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > 1 exact payment → high confidence on the right invoice 10ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > 2 partial payment keeps the remaining balance 8ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 2 partial payment keeps the remaining balance 9ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > 3 one payment for two invoices follows the listed references 4ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > 4 a 2% shortfall on taxable value is flagged as possible TDS, not settled 4ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > 5 an overpayment keeps the excess as unallocated customer credit 6ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 4 a 2% shortfall on taxable value is flagged as possible TDS, not settled 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > 5 an overpayment keeps the excess as unallocated customer credit 5ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > 6 an unknown deposit goes to the unmatched queue 3ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > importing the same statement twice adds nothing 4ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > importing the same statement twice adds nothing 8ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > identical rows inside one file are both kept and flagged for review 1ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > nothing is paid and no cash moves until the owner confirms 23ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > a confirmed transaction cannot be confirmed twice 5ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > nothing is paid and no cash moves until the owner confirms 26ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > a confirmed transaction cannot be confirmed twice 3ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > rejects malformed files with a useful error 1ms
- ✓ tests/reconciliation.test.js > bank statement reconciliation > normalises references and never confuses similar customer names 1ms
+ ✓ tests/reconciliation.test.js > bank statement reconciliation > normalises references and never confuses similar customer names 0ms
  ✓ tests/reconciliation.test.js > bank statement reconciliation > a customer payment claim stays unpaid until confirmed with evidence 4ms
- ✓ tests/reconciliation.test.js > money already recorded is never applied twice > a bank credit for a payment recorded by hand is offered as a link, and linking adds no money 27ms
- ✓ tests/engine.test.js > invoice states > paid invoices have zero balance and status paid 9ms
+ ✓ tests/reconciliation.test.js > money already recorded is never applied twice > a bank credit for a payment recorded by hand is offered as a link, and linking adds no money 24ms
+ ✓ tests/engine.test.js > invoice states > paid invoices have zero balance and status paid 8ms
  ✓ tests/engine.test.js > invoice states > a partial payment reduces the balance by exactly the amount 4ms
- ✓ tests/engine.test.js > invoice states > refuses payments dated after the Demo Date 6ms
+ ✓ tests/engine.test.js > invoice states > refuses payments dated after the Demo Date 7ms
  ✓ tests/engine.test.js > invoice states > refuses payments above the balance 2ms
- ✓ tests/engine.test.js > invoice states > a customer cannot stack a second payment claim while one is under review 6ms
+ ✓ tests/engine.test.js > invoice states > a customer cannot stack a second payment claim while one is under review 5ms
  ✓ tests/engine.test.js > invoice states > refuses customer claims dated after the Demo Date 2ms
  ✓ tests/engine.test.js > invoice states > deciding on one claim never wipes a different pending claim on the same invoice 4ms
  ✓ tests/engine.test.js > invoice states > disputed invoices keep their disputed state; status follows the date 2ms
  ✓ tests/engine.test.js > invoice states > the timeline records each action 4ms
  ✓ tests/engine.test.js > follow-up ladder > stages come from the configured schedule and the Demo Date 2ms
- ✓ tests/engine.test.js > follow-up ladder > never sends the same stage twice without an audited reset 5ms
- ✓ tests/engine.test.js > follow-up ladder > disputes pause and resolution resumes 5ms
+ ✓ tests/engine.test.js > follow-up ladder > never sends the same stage twice without an audited reset 7ms
+ ✓ tests/engine.test.js > follow-up ladder > disputes pause and resolution resumes 6ms
  ✓ tests/engine.test.js > follow-up ladder > a promise pauses until the promised date, then resumes 2ms
  ✓ tests/engine.test.js > follow-up ladder > part payments update the next reminder amount 4ms
  ✓ tests/engine.test.js > follow-up ladder > opening a message link is logged as prepared, not sent 3ms
  ✓ tests/engine.test.js > customer metrics > describes history and labels thin history 3ms
  ✓ tests/engine.test.js > cash forecast > carries every closing balance into the next opening and reconciles each week 11ms
- ✓ tests/engine.test.js > cash forecast > finds the first buffer breach from the seeded obligations 10ms
- ✓ tests/engine.test.js > cash forecast > excludes paid and disputed invoices and counts partial balances once 10ms
- ✓ tests/engine.test.js > cash forecast > a hypothetical collection changes the scenario only, by exactly its amount 24ms
- ✓ tests/engine.test.js > cash forecast > a scenario date before today is treated as today, so no money vanishes 15ms
- ✓ tests/engine.test.js > cash forecast > confirming a payment moves money from expected to cash without double counting 15ms
- ✓ tests/engine.test.js > cash forecast > what-if: customer delay, supplier postponement and new order 32ms
- ✓ tests/engine.test.js > cash forecast > the buffer change moves the breach 13ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > is reproducible and each score equals the sum of its factors 23ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > a large invoice due after the gap does not count toward it; a smaller earlier one does 8ms
- ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > passes every check on the seeded data and reports the real first breach 31ms
- ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > sends no names, contacts, GSTINs, bank details or invoice numbers 15ms
+ ✓ tests/engine.test.js > cash forecast > finds the first buffer breach from the seeded obligations 6ms
+ ✓ tests/engine.test.js > cash forecast > excludes paid and disputed invoices and counts partial balances once 14ms
+ ✓ tests/engine.test.js > cash forecast > a hypothetical collection changes the scenario only, by exactly its amount 31ms
+ ✓ tests/engine.test.js > cash forecast > a scenario date before today is treated as today, so no money vanishes 14ms
+ ✓ tests/engine.test.js > cash forecast > confirming a payment moves money from expected to cash without double counting 12ms
+ ✓ tests/engine.test.js > cash forecast > what-if: customer delay, supplier postponement and new order 33ms
+ ✓ tests/engine.test.js > cash forecast > the buffer change moves the breach 11ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > is reproducible and each score equals the sum of its factors 19ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > a large invoice due after the gap does not count toward it; a smaller earlier one does 9ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > disputed and promised invoices are outside the ordinary chase list 9ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > passes every check on the seeded data and reports the real first breach 32ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > sends no names, contacts, GSTINs, bank details or invoice numbers 11ms
  ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > strips unexpected fields a client might add 10ms
- ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > flags missing or non-integer fields as blocking and skips the forecast 10ms
- ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > catches negative balances and tampered totals 17ms
- ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > detects a screen that disagrees with the recomputation and duplicate imports 17ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > disputed and promised invoices are outside the ordinary chase list 10ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > rankings update after payment, dispute and buffer changes 31ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > the collection plan only uses invoices that can arrive before the gap 9ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > collecting a plan invoice by the suggested date shrinks the gap by its full balance 19ms
- ✓ tests/engine.test.js > Cash Gap-to-Action priority > moving the Demo Date forward changes overdue points 27ms
- ✓ tests/engine.test.js > adding a customer > validates input, takes the state from a valid GSTIN, and can be invoiced right away 10ms
- ✓ tests/engine.test.js > translation and simple-language setting > the follow-up card actions still map to the same sandboxed actions 6ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > flags missing or non-integer fields as blocking and skips the forecast 19ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > catches negative balances and tampered totals 19ms
+ ✓ tests/audit.test.js > integrity audit (same chain the workflow runs) > detects a screen that disagrees with the recomputation and duplicate imports 16ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > rankings update after payment, dispute and buffer changes 28ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > the collection plan only uses invoices that can arrive before the gap 10ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > collecting a plan invoice by the suggested date shrinks the gap by its full balance 15ms
+ ✓ tests/engine.test.js > Cash Gap-to-Action priority > moving the Demo Date forward changes overdue points 29ms
+ ✓ tests/engine.test.js > adding a customer > validates input, takes the state from a valid GSTIN, and can be invoiced right away 11ms
+ ✓ tests/engine.test.js > translation and simple-language setting > the follow-up card actions still map to the same sandboxed actions 5ms
  ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > expense edits go through a logged action that keeps amounts as integer paise 2ms
  ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > updateExpenses rejects negative or malformed amounts without changing state 4ms
  ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > opening-balance and fx changes leave trail entries 3ms
  ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > a no-op fx patch does not log 2ms
- ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > toggling simple language persists and touches nothing else (and survives storage round-trip) 17ms
- ✓ tests/audit.test.js > integrity-check API > health reports workflow configuration 64ms
+ ✓ tests/engine.test.js > settings and expenses are logged in the Decision Trail > toggling simple language persists and touches nothing else (and survives storage round-trip) 22ms
+ ✓ tests/audit.test.js > integrity-check API > health reports workflow configuration 65ms
 stderr | tests/audit.test.js > integrity-check API > reports start failures and failed runs without inventing a result
 startTask failed: timeout
 
+ ✓ tests/audit.test.js > integrity-check API > starts the real task slug with a minimised payload and idempotency key, then returns the report 64ms
+ ✓ tests/audit.test.js > integrity-check API > duplicate submissions reuse the same idempotency key 12ms
+ ✓ tests/audit.test.js > integrity-check API > rejects an invalid payload before calling Render 9ms
+ ✓ tests/audit.test.js > integrity-check API > reports start failures and failed runs without inventing a result 26ms
+ ✓ tests/audit.test.js > integrity-check API > says "not configured" instead of faking a run when no Render credentials exist 27ms
  ✓ tests/gst.test.js > money > formats Indian grouping 3ms
  ✓ tests/gst.test.js > money > parses rupee input exactly once into paise 1ms
- ✓ tests/gst.test.js > money > rounds half away from zero without float error 0ms
+ ✓ tests/gst.test.js > money > rounds half away from zero without float error 1ms
  ✓ tests/gst.test.js > money > rejects non-integer paise 1ms
  ✓ tests/gst.test.js > money > converts for display only, at the owner rate, and falls back to INR without a rate 1ms
- ✓ tests/gst.test.js > GST acceptance tests > A: ₹10,000 at 18% intra-state → CGST 900 + SGST 900 = ₹11,800 1ms
+ ✓ tests/gst.test.js > GST acceptance tests > A: ₹10,000 at 18% intra-state → CGST 900 + SGST 900 = ₹11,800 2ms
  ✓ tests/gst.test.js > GST acceptance tests > B: ₹10,000 at 18% to Gujarat → IGST 1,800 = ₹11,800 0ms
  ✓ tests/gst.test.js > GST acceptance tests > 3 units at ₹333 with 5% tax rounds each half and the total 0ms
  ✓ tests/gst.test.js > GST acceptance tests > 10% discount reduces taxable value 0ms
@@ -80,47 +85,45 @@ startTask failed: timeout
  ✓ tests/gst.test.js > GST acceptance tests > multiple lines round independently and reconcile with round-off 1ms
  ✓ tests/gst.test.js > GST acceptance tests > rejects invalid tax rates and incomplete state information 1ms
  ✓ tests/gst.test.js > GST acceptance tests > amount in words matches the rounded total 0ms
- ✓ tests/gst.test.js > GSTIN validation > accepts published-format examples and every sample GSTIN 6ms
+ ✓ tests/gst.test.js > GSTIN validation > accepts published-format examples and every sample GSTIN 7ms
  ✓ tests/gst.test.js > GSTIN validation > rejects bad checksum, format and length 0ms
  ✓ tests/gst.test.js > invoice numbering > is consecutive within the financial year and restarts in a new one 1ms
- ✓ tests/gst.test.js > invoice numbering > seed numbers are unique 4ms
+ ✓ tests/gst.test.js > invoice numbering > seed numbers are unique 2ms
  ✓ tests/gst.test.js > HSN/SAC validation > 4-digit HSN passes up to ₹5 crore and fails above it 1ms
  ✓ tests/gst.test.js > HSN/SAC validation > 6-digit HSN passes at both turnovers 0ms
- ✓ tests/gst.test.js > HSN/SAC validation > rejects letters and other lengths 0ms
+ ✓ tests/gst.test.js > HSN/SAC validation > rejects letters and other lengths 3ms
  ✓ tests/gst.test.js > HSN/SAC validation > a 6-digit SAC starting 99 passes at any turnover 0ms
- ✓ tests/gst.test.js > HSN/SAC validation > every seeded line passes at the seeded turnover 2ms
- ✓ tests/gst.test.js > HSN/SAC validation > saveInvoice blocks a bad code and names the line 3ms
+ ✓ tests/gst.test.js > HSN/SAC validation > every seeded line passes at the seeded turnover 4ms
+ ✓ tests/gst.test.js > HSN/SAC validation > saveInvoice blocks a bad code and names the line 4ms
  ✓ tests/gst.test.js > state names on documents > labels a code with its name, falling back to the bare code 0ms
  ✓ tests/gst.test.js > state names on documents > a changed state code can never leave the old name behind 2ms
- ✓ tests/gst.test.js > business profile > saves valid bank details and rejects a bad IFSC or missing account 6ms
- ✓ tests/gst.test.js > business profile > needs a Udyam category only when registered 4ms
- ✓ tests/gst.test.js > business profile > accepts a small PNG/JPG logo, rejects other types and oversize files, and can remove it 8ms
+ ✓ tests/gst.test.js > business profile > saves valid bank details and rejects a bad IFSC or missing account 7ms
+ ✓ tests/gst.test.js > business profile > needs a Udyam category only when registered 6ms
+ ✓ tests/gst.test.js > business profile > accepts a small PNG/JPG logo, rejects other types and oversize files, and can remove it 11ms
  ✓ tests/gst.test.js > business profile > old saved data without a logo still validates 2ms
- ✓ tests/gst.test.js > business profile > initials come from the business name 0ms
- ✓ tests/audit.test.js > integrity-check API > starts the real task slug with a minimised payload and idempotency key, then returns the report 78ms
- ✓ tests/audit.test.js > integrity-check API > duplicate submissions reuse the same idempotency key 14ms
- ✓ tests/audit.test.js > integrity-check API > rejects an invalid payload before calling Render 5ms
- ✓ tests/audit.test.js > integrity-check API > reports start failures and failed runs without inventing a result 29ms
- ✓ tests/audit.test.js > integrity-check API > says "not configured" instead of faking a run when no Render credentials exist 31ms
- ✓ tests/audit.test.js > integrity-check API > caps integrity-check starts per client 52ms
- ✓ tests/audit.test.js > integrity-check API > serves the app shell for deep links but not for unknown API routes 28ms
- ✓ tests/audit.test.js > integrity-check API > answers malformed JSON bodies with a JSON 400 and no stack trace 9ms
- ✓ tests/audit.test.js > integrity-check API > validates the run id before reporting the workflow as unconfigured 8ms
- ✓ tests/i18n.test.js > localisation > Hindi covers every English key with the same placeholders 23ms
+ ✓ tests/gst.test.js > business profile > initials come from the business name 1ms
+ ✓ tests/audit.test.js > integrity-check API > caps integrity-check starts per client 44ms
+ ✓ tests/audit.test.js > integrity-check API > serves the app shell for deep links but not for unknown API routes 33ms
+ ✓ tests/audit.test.js > integrity-check API > answers malformed JSON bodies with a JSON 400 and no stack trace 8ms
+ ✓ tests/audit.test.js > integrity-check API > validates the run id before reporting the workflow as unconfigured 14ms
+ ✓ tests/audit.test.js > integrity-check API > answers wrongly shaped payloads with 400, not a server error 19ms
+ ✓ tests/audit.test.js > integrity-check API > sends security headers and caches fingerprinted assets only 17ms
+ ✓ tests/audit.test.js > integrity-check API > caps status polling per client 11ms
+ ✓ tests/i18n.test.js > localisation > Hindi covers every English key with the same placeholders 22ms
  ✓ tests/i18n.test.js > localisation > every reminder template exists in both languages with the same placeholders 1ms
  ✓ tests/i18n.test.js > localisation > the demand letter is never called a legal notice 1ms
  ✓ tests/i18n.test.js > simple-language mode > the simple overlay exists in both languages with the same keys, all present in the base dicts 2ms
- ✓ tests/i18n.test.js > simple-language mode > look-up order: simple overlay wins, then language dict, then en 0ms
+ ✓ tests/i18n.test.js > simple-language mode > look-up order: simple overlay wins, then language dict, then en 1ms
  ✓ tests/i18n.test.js > simple-language mode > simple mode keeps working in Hindi and stays independent per language 0ms
  ✓ tests/i18n.test.js > simple-language mode > interpolation still works on simple strings 0ms
- ✓ tests/seed.test.js > seed hygiene > customer records carry no payment-history metadata 8ms
+ ✓ tests/seed.test.js > seed hygiene > customer records carry no payment-history metadata 11ms
  ✓ tests/seed.test.js > seed hygiene > history dates are unchanged by the delays relocation 3ms
  ✓ tests/seed.test.js > seed hygiene > every settled history record still has a paidDate 3ms
- ✓ tests/formFlow.test.js > invoice form step flow > exposes exactly three steps 2ms
+ ✓ tests/formFlow.test.js > invoice form step flow > exposes exactly three steps 3ms
  ✓ tests/formFlow.test.js > invoice form step flow > step 1 needs a customer and a valid date; place-of-supply problems surface here 1ms
- ✓ tests/formFlow.test.js > invoice form step flow > step 1 passes on a valid form (calc not consulted when fine) 0ms
- ✓ tests/formFlow.test.js > invoice form step flow > step 2 requires a description and a positive rate per line 0ms
- ✓ tests/formFlow.test.js > invoice form step flow > step 2 rejects text rates and zero rates but keeps the engine untouched 0ms
+ ✓ tests/formFlow.test.js > invoice form step flow > step 1 passes on a valid form (calc not consulted when fine) 1ms
+ ✓ tests/formFlow.test.js > invoice form step flow > step 2 requires a description and a positive rate per line 1ms
+ ✓ tests/formFlow.test.js > invoice form step flow > step 2 rejects text rates and zero rates but keeps the engine untouched 1ms
  ✓ tests/formFlow.test.js > invoice form step flow > step 3 has no extra UI validation — the engine validates on submit 0ms
  ✓ tests/formFlow.test.js > invoices empty-state copy > nothing exists yet beats the filter explanation 0ms
  ✓ tests/device.test.js > animations default on, except on low-end devices > medium and high-end devices animate by default; the setting still wins 2ms
@@ -128,10 +131,10 @@ startTask failed: timeout
  ✓ tests/device.test.js > animations default on, except on low-end devices > browsers that report nothing are treated as capable 0ms
 
  Test Files  8 passed (8)
-      Tests  122 passed (122)
-   Start at  16:09:53
-   Duration  1.28s (tests 54%, import 34%, transform 10%, worker 3%)
+      Tests  125 passed (125)
+   Start at  16:32:57
+   Duration  1.32s (tests 54%, import 32%, transform 10%, worker 4%)
 
-    Isolate  8 workers spawned · ~200ms startup each (spawn + environment, per file)
-             at least ~333ms faster with isolate: false — reuses workers across files instead of one per file
+    Isolate  8 workers spawned · ~209ms startup each (spawn + environment, per file)
+             at least ~348ms faster with isolate: false — reuses workers across files instead of one per file
 

@@ -159,7 +159,7 @@ Health/readiness: `GET /api/health` → `{ ok, service, workflowConfigured }`. S
 
 ```bash
 npm install
-npm test          # 122 automated tests (vitest)
+npm test          # 125 automated tests (vitest)
 npm run build     # production build into dist/
 npm start         # serves dist/ + API on http://localhost:3000
 npm run dev       # Vite dev server on :5173 (proxies /api to :3000 if npm start is running)
