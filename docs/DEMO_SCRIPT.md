@@ -6,7 +6,7 @@ Start from a clean state: Settings → **Reset demo** (Demo Date 23 Oct 2026). A
 
 | Time | Screen | What to show and say |
 |---|---|---|
-| 0:00–0:25 | Dashboard | "Rakesh runs Sharma Packaging: 8 staff, 12 customers on 30-day credit. ₹10.2 lakh is owed to him, yet on 1 November, salary day, his cash falls ₹89,715 below the ₹1.5 lakh buffer he needs." |
+| 0:00–0:25 | Dashboard | "Deneal runs Sharma Packaging: 8 staff, 12 customers on 30-day credit. ₹10.2 lakh is owed to the business, yet on 1 November, salary day, its cash falls ₹89,715 below the ₹1.5 lakh buffer it needs." |
 | 0:25–1:00 | Dashboard → Radar | Point at the red alert and the "Lowest point" and "First week below buffer" tiles. Open the Radar: salaries ₹2.64 L and rent create the gap; receipts listed under "Expected too late to help". |
 | 1:00–1:45 | Radar | The collection plan: Nashik 0060 + part of Hadapsar 0064 close the gap. Expand "Why this invoice?" on Nashik (factor table, 30-day average delay). Compare Chakan 0072 (₹2.3 L, larger) → "not due until 14 Nov, after the gap", 0 gap points. Press **Try "collect earlier"** → gap ₹89,715 → ₹16,825, purple scenario line. "Nothing has been recorded." |
 | 1:45–2:30 | Follow-ups → customer page → Inbox | Nashik's final reminder, prepared in Hindi (customer preference). Show WhatsApp handoff and **I sent it** ("opening WhatsApp does not send"). Open Surat 0065's customer page → *Something's wrong* → submit. Inbox shows the dispute; follow-ups paused. |
