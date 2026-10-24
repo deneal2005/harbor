@@ -359,6 +359,32 @@ export default {
   'forecast.operating': "Operating",
   'forecast.tax': "Tax",
   'forecast.other': "Other",
+
+  // Sign-in opening screen and device session
+  'login.wordmark': 'Harbor',
+  'login.sub': 'Cash-flow clarity for small business',
+  'login.tagline1': 'Collect Forecast', 'login.tagline2': 'Stay Ahead',
+  'login.pitch': 'Turn unpaid invoices into a clear collection plan before cash runs short.',
+  'login.title': 'Sign in to Harbor', 'login.desc': 'Continue to your business workspace.',
+  'login.setupTitle': 'Create your device key', 'login.setupDesc': 'Your books live on this device only. Set the password that locks them, and unlock them with it from the next visit.',
+  'login.email': 'Email address', 'login.emailPh': 'you@business.com',
+  'login.pwd': 'Password', 'login.pwdHint': 'At least {min} characters.',
+  'login.signin': 'Sign in', 'login.signingIn': 'Signing in…',
+  'login.create': 'Create device key', 'login.creating': 'Creating device key…',
+  'login.done': 'Welcome back',
+  'login.forgot': 'Forgot password?',
+  'login.forgotTitle': 'The password is held only on this device',
+  'login.forgotBody': 'Harbor is local-first: no server holds your password, so it cannot be mailed or reset from anywhere else. You can remove the device key now and create a fresh one — the business data already saved on this device stays exactly as it is.',
+  'login.removeKey': 'Remove the device key',
+  'login.removedNote': 'Device key removed. Set a new one for this device.',
+  'login.showPwd': 'Show password', 'login.hidePwd': 'Hide password',
+  'login.capsLock': 'Caps Lock is on',
+  'login.err.email': 'Enter a valid email address.',
+  'login.err.weak': 'Use at least {min} characters for the password.',
+  'login.err.badLogin': 'Wrong email or password.',
+  'login.trust': 'Local-first and private: your books stay on your own device, always.',
+  'session.signedInAs': 'Signed in as {email} on this device.',
+  'session.signOut': 'Sign out', 'session.signOutHint': 'Signing out locks this workspace behind the device key. Data stays on the device; sign in again to reach it.',
 };
 
 // "Simple language" mode (Settings): plain everyday wording for explanatory screens.
@@ -388,5 +414,6 @@ export const simple = {
   'pay.subtitle': 'Match money that came into your bank with the right invoices, then confirm it in your books.',
   'pay.review': 'Money waiting for your check',
   'pay.noneImport': 'No bank money is waiting. Load a bank statement to look for payments.',
+
 };
 

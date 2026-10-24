@@ -1,6 +1,8 @@
 import { Component, Suspense, lazy, useEffect } from 'react';
 import { Route, Routes } from 'react-router';
 import Layout from './components/Layout.jsx';
+import RequireSession from './components/RequireSession.jsx';
+import Login from './pages/Login.jsx';
 import { ButtonLink, Page } from './components/ui.jsx';
 import { useStore } from './store-context.js';
 import Dashboard from './pages/Dashboard.jsx';
@@ -102,11 +104,14 @@ export default function App() {
     <ErrorBoundary t={t}>
       <Suspense fallback={<PageSkeleton label={t('common.loading')} />}>
         <Routes>
+        {/* The signed gate is public: first run creates the device key, later visits sign in.
+            Customer routes stay open without a session. */}
+        <Route path="/login" element={<Login />} />
         <Route path="/pay/:token" element={<CustomerPay />} />
         <Route path="/print/invoice/:id" element={<PrintInvoice />} />
         <Route path="/print/letter/:customerId" element={<PrintLetter />} />
         <Route path="/print/pack/:id" element={<PrintPack />} />
-        <Route element={<Layout />}>
+        <Route element={<RequireSession><Layout /></RequireSession>}>
           <Route index element={<Dashboard />} />
           <Route path="radar" element={<Radar />} />
           <Route path="forecast" element={<Forecast />} />
