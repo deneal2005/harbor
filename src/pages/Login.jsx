@@ -141,6 +141,7 @@ export default function Login() {
         const r = await signIn(clean, pass);
         if (!r.ok) {
           setBusy(false);
+          if (r.error === 'locked') return setFormErr({ msg: t('login.err.locked') });
           if (r.error !== 'badLogin') return setFormErr({ msg: t('app.offline') });
           setPassword('');
           return setFormErr({ msg: t('login.err.badLogin'), field: 'pwd' });

@@ -52,10 +52,30 @@ export async function endSession(pool, req, res) {
   res.clearCookie(COOKIE, { path: '/' });
 }
 
+// Per-account throttle, kept in Postgres so it holds across restarts and instances. Counted for unknown
+// emails too, so a lockout never reveals whether an account exists. While locked, attempts are refused
+// without checking the password and do not extend the lock.
+// shortcut: someone who knows an owner's email can keep them locked out by retrying every 15 min; add
+// an emailed unlock link once email delivery exists.
+export const LOCK_AFTER = 5;
+const LOCK_WINDOW = "interval '15 minutes'";
+
+// Returns the owner row, null for a wrong password, or { locked: true }.
 export async function login(pool, email, password) {
-  const { rows: [owner] } = await pool.query('SELECT id, business_id, password_hash FROM owners WHERE email = $1', [normalizeEmail(email)]);
+  const key = normalizeEmail(email);
+  const locked = await pool.query(`SELECT 1 FROM login_failures WHERE email = $1 AND failures >= $2 AND last_at > now() - ${LOCK_WINDOW}`, [key, LOCK_AFTER]);
+  if (locked.rowCount) return { locked: true };
+  const { rows: [owner] } = await pool.query('SELECT id, business_id, password_hash FROM owners WHERE email = $1', [key]);
   const ok = await verifyPassword(password, owner?.password_hash ?? DUMMY_HASH);
-  return ok && owner ? owner : null;
+  if (ok && owner) {
+    await pool.query('DELETE FROM login_failures WHERE email = $1', [key]);
+    return owner;
+  }
+  // A failure after a quiet window starts the count again.
+  await pool.query(`INSERT INTO login_failures (email, failures, last_at) VALUES ($1, 1, now())
+    ON CONFLICT (email) DO UPDATE SET failures = CASE WHEN login_failures.last_at < now() - ${LOCK_WINDOW} THEN 1 ELSE login_failures.failures + 1 END, last_at = now()`, [key]);
+  await pool.query("DELETE FROM login_failures WHERE last_at < now() - interval '1 day'");
+  return null;
 }
 
 // Sets req.owner = { id, businessId, email, demo } or answers 401.

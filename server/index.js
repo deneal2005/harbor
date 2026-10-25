@@ -62,7 +62,7 @@ export function createApp({ workflows, workflowSlug, distDir, limit, statusLimit
   app.get('/api/health', (req, res) => res.json({ ok: true, service: 'marlo', workflowConfigured: configured, databaseConfigured: !!pool }));
 
   if (pool) app.use('/api', dataRouter(pool, { rateLimiter, ...dataLimits }));
-  else app.use(['/api/auth', '/api/state', '/api/actions', '/api/pay'], (req, res) => res.status(503).json({ error: 'database-not-configured' }));
+  else app.use(['/api/auth', '/api/account', '/api/state', '/api/actions', '/api/pay'], (req, res) => res.status(503).json({ error: 'database-not-configured' }));
 
   app.post('/api/integrity-check', rateLimiter(limit), express.json({ limit: '1mb' }), async (req, res) => {
     if (!configured) return res.status(503).json({ error: 'workflow-not-configured' });
@@ -119,6 +119,7 @@ export function createApp({ workflows, workflowSlug, distDir, limit, statusLimit
   // Express' default HTML error page, which leaks the raw stack trace to the client.
   app.use((err, req, res, _next) => {
     if (err?.type === 'entity.parse.failed' || err?.name === 'SyntaxError') return res.status(400).json({ error: 'invalid-json' });
+    if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'too-large' });
     console.error('Request failed:', err?.name, err?.message);
     res.status(500).json({ error: 'server-error' });
   });

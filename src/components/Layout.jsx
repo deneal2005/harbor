@@ -99,10 +99,11 @@ function Brand({ onNavigate }) {
 function DateChip({ compact }) {
   const { t, state, date } = useStore();
   return (
-    <Link to="/settings" title={t('app.demoDate')} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-white px-2 text-sm font-medium shadow-[var(--shadow-card)] hover:border-ink/20">
+    <Link to="/settings" title={t('app.demoDate')} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-line bg-white px-2 text-sm font-medium shadow-[var(--shadow-card)] hover:border-ink/20">
       <CalendarDays size={16} className="text-faint" aria-hidden="true" />
       <span className={compact ? 'sr-only' : 'hidden text-muted sm:inline'}>{t('app.demoDate')}</span>
-      <span className="num">{date(state.settings.demoDate)}</span>
+      {/* On phones the header has no room for the date: icon only, the date stays readable to screen readers. */}
+      <span className={cx('num', compact && 'sr-only sm:not-sr-only')}>{date(state.settings.demoDate)}</span>
     </Link>
   );
 }
@@ -190,14 +191,16 @@ export default function Layout() {
 
       <div className="min-w-0">
         <header className="no-print sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-2 lg:hidden">
-              <Link to="/" title={t('nav.dashboard')}
-                className="inline-flex items-center gap-2 rounded-xl text-[#0F2D3F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-inset">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
+            {/* Phone widths: every item here must fit in 320px; the wordmark and language switch drop out
+                first (language stays in the "More" sheet). */}
+            <div className="flex min-w-0 items-center gap-2 lg:hidden">
+              <Link to="/" title={t('nav.dashboard')} aria-label={t('nav.dashboard')}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl text-[#0F2D3F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-inset">
                 <HarborMark decorative dock={!brandDocked} className="h-8 w-8" />
-                <span className="brand-word hidden min-[400px]:inline text-sm">HARBOR</span>
+                <span className="brand-word hidden min-[430px]:inline text-sm">HARBOR</span>
               </Link>
-              <div className="ml-1">{controls.language({ size: 'sm' })}</div>
+              <div className="ml-1 hidden min-[360px]:block">{controls.language({ size: 'sm' })}</div>
             </div>
             <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
               <SearchBox className="w-full max-w-sm" />
@@ -206,9 +209,9 @@ export default function Layout() {
             </div>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => setSearchAt(searching ? null : loc.pathname)} aria-expanded={searching} aria-label={t('search.label')}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white text-muted shadow-[var(--shadow-card)] lg:hidden"><Search size={18} aria-hidden="true" /></button>
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-white text-muted shadow-[var(--shadow-card)] lg:hidden"><Search size={18} aria-hidden="true" /></button>
               <DateChip compact />
-              <Link to="/invoices/new" aria-label={t('nav.newInvoice')} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-ink px-3 text-sm font-medium text-white shadow-sm hover:bg-ink/90 sm:px-3.5"><Plus size={16} aria-hidden="true" /><span className="hidden sm:inline">{t('nav.newInvoice')}</span></Link>
+              <Link to="/invoices/new" aria-label={t('nav.newInvoice')} className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl bg-ink px-3 text-sm font-medium text-white shadow-sm hover:bg-ink/90 sm:px-3.5"><Plus size={16} aria-hidden="true" /><span className="hidden sm:inline">{t('nav.newInvoice')}</span></Link>
             </div>
           </div>
           {searching && <div className="px-4 pb-3 lg:hidden"><SearchBox autoFocus onDone={() => setSearchAt(null)} /></div>}
@@ -228,7 +231,7 @@ export default function Layout() {
       <nav aria-label="Quick" className="no-print fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
         <span aria-hidden="true" className={cx('pointer-events-none absolute left-0 top-0 flex w-1/5 justify-center transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.3,0.8,0.2,1)]', tabIndex < 0 && 'opacity-0')}
           style={{ transform: `translateX(${Math.max(0, tabIndex) * 100}%)` }}><span className="h-[3px] w-10 rounded-b-full bg-brand" /></span>
-        <ul className="grid grid-cols-5">
+        <ul className="grid grid-cols-5 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
           {TABS.map(([to, key, Icon]) => (
             <li key={to}>
               <NavLink to={to} end className={({ isActive }) => cx('relative flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 text-[0.7rem] font-medium leading-tight transition-colors', isActive ? 'text-brand' : 'text-muted')}>
@@ -250,7 +253,7 @@ export default function Layout() {
       {moreOpen && (
         <div className="no-print fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label={t('nav.more')}>
           <div className="animate-fade absolute inset-0 bg-night/50 backdrop-blur-[2px]" onClick={() => setMore(null)} />
-          <div className="animate-rise absolute inset-x-0 bottom-0 max-h-[88vh] overflow-y-auto rounded-t-3xl bg-night px-4 pb-8 pt-4">
+          <div className="animate-rise absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl bg-night px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-4">
             <div className="mb-5 flex items-center justify-between"><Brand onNavigate={() => setMore(null)} /><button type="button" onClick={() => setMore(null)} aria-label={t('app.close')} className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/80 hover:bg-white/10"><X size={20} /></button></div>
             <Nav onNavigate={() => setMore(null)} />
             <div className="mt-6 space-y-3 rounded-2xl bg-white/[0.05] p-3">
@@ -265,7 +268,7 @@ export default function Layout() {
 
       {outlook && <OutlookNotice key={outlook.id} o={outlook} />}
       {toast && (
-        <div key={toast.id} role="status" aria-live="polite" className={cx('animate-rise no-print fixed inset-x-4 bottom-20 z-50 mx-auto flex max-w-md items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white shadow-[var(--shadow-pop)] lg:bottom-6', toast.tone === 'error' ? 'bg-danger' : 'bg-night')}>
+        <div key={toast.id} role="status" aria-live="polite" className={cx('animate-rise no-print fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-md items-center gap-2 rounded-2xl px-4 py-3 text-sm text-white shadow-[var(--shadow-pop)] lg:bottom-6', toast.tone === 'error' ? 'bg-danger' : 'bg-night')}>
           {toast.message}
         </div>
       )}

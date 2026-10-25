@@ -86,6 +86,15 @@ export async function signIn(email, password) {
   return { ok: true, email: r.body.email };
 }
 
+// Permanently deletes the business on the server, then forgets this device's remembered email.
+export async function deleteAccount(password) {
+  const r = await api('/api/account/delete', { password: String(password ?? '') });
+  if (r.status !== 200) return failure(r);
+  try { globalThis.localStorage?.removeItem(LAST_EMAIL_KEY); } catch { /* blocked storage: nothing remembered */ }
+  signedOut();
+  return { ok: true };
+}
+
 export async function endSession() {
   await api('/api/auth/logout', {});
   signedOut();

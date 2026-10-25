@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
-import { Coins, Download, Languages, LogOut, RotateCcw, UserRound } from 'lucide-react';
+import { Coins, Download, Languages, LogOut, RotateCcw, Trash2, UserRound } from 'lucide-react';
 import { BusinessMark } from '../components/BusinessMark.jsx';
 import { useDisplayControls } from '../components/displayControls.jsx';
 import { useErrorText } from '../hooks/useErrorText.js';
@@ -9,7 +9,7 @@ import { DEMO_DATE } from '../data/seed.js';
 import { DEFAULT_FX } from '../data/config.js';
 import { LOGO_MAX_BYTES, updateBusiness, updateExpenses, updateSettings } from '../services/actions.js';
 import { CATEGORIES } from '../services/forecasting.js';
-import { endSession, getSessionSnapshot, subscribeSession } from '../services/session.js';
+import { deleteAccount, endSession, getSessionSnapshot, subscribeSession } from '../services/session.js';
 import { useStore } from '../store-context.js';
 import { addDays, isValidDate } from '../utils/dates.js';
 import { initialsOf } from '../utils/initials.js';
@@ -47,6 +47,16 @@ export default function Settings() {
   const session = useSyncExternalStore(subscribeSession, getSessionSnapshot);
   const signOut = () => { endSession(); navigate('/login', { replace: true }); };
   const [confirmReset, setConfirmReset] = useState(false);
+  const [del, setDel] = useState({ open: false, pwd: '', err: null, busy: false });
+  const deleteAll = async (e) => {
+    e.preventDefault();
+    if (del.busy || !del.pwd) return;
+    setDel((d) => ({ ...d, busy: true, err: null }));
+    const r = await deleteAccount(del.pwd);
+    if (r.ok) return navigate('/login', { replace: true });
+    const msg = { badPassword: 'set.deleteBadPwd', locked: 'login.err.locked', 'demo-only': 'set.deleteDemo' }[r.error] ?? 'app.offline';
+    setDel((d) => ({ ...d, busy: false, pwd: '', err: t(msg) }));
+  };
   const [rates, setRates] = useState(() => Object.fromEntries(['USD', 'EUR', 'JPY'].map((c) => [c, String(state.settings.fxRates?.[c] ?? DEFAULT_FX[c])])));
 
   const save = () => {
@@ -190,6 +200,20 @@ export default function Settings() {
       {error && <Notice tone="danger">{error}</Notice>}
       <div className="flex justify-end"><Button variant="primary" onClick={save}>{t('common.save')}</Button></div>
       <Card title={t('set.privacy')}><p className="text-sm">{t('set.privacyBody')}</p></Card>
+      {!demo && (
+        <Card title={t('set.delete')} hint={t('set.deleteHint')} icon={Trash2}>
+          <Button variant="danger" icon={Trash2} onClick={() => setDel({ open: true, pwd: '', err: null, busy: false })}>{t('set.delete')}</Button>
+        </Card>
+      )}
+      <Dialog open={del.open} onClose={() => !del.busy && setDel((d) => ({ ...d, open: false }))} title={t('set.delete')}
+        footer={<><Button onClick={() => setDel((d) => ({ ...d, open: false }))} disabled={del.busy}>{t('common.cancel')}</Button>
+          <Button type="submit" form="delete-account" variant="danger" icon={Trash2} disabled={del.busy || !del.pwd}>{t('set.deleteBtn')}</Button></>}>
+        <form id="delete-account" onSubmit={deleteAll} className="space-y-3">
+          <p>{t('set.deleteConfirm')}</p>
+          <Field label={t('login.pwd')} error={del.err}>{(p) => <input {...p} type="password" autoComplete="current-password" className={inputCls} value={del.pwd} disabled={del.busy}
+            onChange={(e) => setDel((d) => ({ ...d, pwd: e.target.value, err: null }))} />}</Field>
+        </form>
+      </Dialog>
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} title={t('set.reset')}
         footer={<><Button onClick={() => setConfirmReset(false)}>{t('common.cancel')}</Button><Button variant="danger" icon={RotateCcw} onClick={async () => { const ok = await reset(); setConfirmReset(false); notify(ok ? t('set.resetDone') : t('app.storageFail'), ok ? 'ok' : 'error'); }}>{t('set.reset')}</Button></>}>
         <p>{t('set.resetConfirm')}</p>

@@ -25,7 +25,10 @@
   --shadow-pop: 0 12px 32px rgb(16 24 40 / 0.14), 0 2px 6px rgb(16 24 40 / 0.06);
 }
 
-html { font-size: 100%; -webkit-font-smoothing: antialiased; }
+html { font-size: 100%; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* viewport-fit=cover lets the page run under the notch in landscape: keep content clear of it. clip (not
+   hidden) stops a stray wide element from widening the phone's layout viewport without breaking sticky. */
+body { padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); overflow-x: clip; }
 html[data-text='large'] { font-size: 118.75%; }
 body { background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); font-size: 1rem; line-height: 1.55; font-feature-settings: 'cv11', 'ss01'; }
 .num { font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -0.01em; }
