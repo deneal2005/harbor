@@ -50,25 +50,6 @@ class ErrorBoundary extends Component {
   }
 }
 
-function Recovery() {
-  const { t, recovery, reset } = useStore();
-  const download = () => {
-    const url = URL.createObjectURL(new Blob([recovery.raw ?? ''], { type: 'application/json' }));
-    Object.assign(document.createElement('a'), { href: url, download: 'harbor-saved-data.json' }).click();
-    URL.revokeObjectURL(url);
-  };
-  return (
-    <div className="mx-auto max-w-xl p-6" role="alert">
-      <h1 className="text-2xl font-semibold">{t('err.recoverTitle')}</h1>
-      <p className="mt-2 text-muted">{t('err.recoverBody', { problem: recovery.problem || recovery.status })}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={download} className="min-h-12 rounded-lg border border-line bg-white px-4">{t('err.download')}</button>
-        <button type="button" onClick={reset} className="min-h-12 rounded-lg bg-brand px-4 text-white">{t('err.startFresh')}</button>
-      </div>
-    </div>
-  );
-}
-
 function NotFound() {
   const { t } = useStore();
   return <Page title={t('common.notFound')} subtitle={t('err.404')}><ButtonLink to="/" variant="primary">{t('err.home')}</ButtonLink></Page>;
@@ -94,23 +75,22 @@ function PageSkeleton({ label }) {
 }
 
 export default function App() {
-  const { state, t } = useStore();
+  const { t } = useStore();
   useEffect(() => {
     const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1200));
     idle(() => PREFETCH.forEach((load) => load().catch(() => {})));
   }, []);
-  if (!state) return <Recovery />;
   return (
     <ErrorBoundary t={t}>
       <Suspense fallback={<PageSkeleton label={t('common.loading')} />}>
         <Routes>
         {/* The signed gate is public: it opens on sign-in, with account creation one click away.
-            Customer routes stay open without a session. */}
+            The customer pay link stays open without a session; print pages read the owner's ledger. */}
         <Route path="/login" element={<Login />} />
         <Route path="/pay/:token" element={<CustomerPay />} />
-        <Route path="/print/invoice/:id" element={<PrintInvoice />} />
-        <Route path="/print/letter/:customerId" element={<PrintLetter />} />
-        <Route path="/print/pack/:id" element={<PrintPack />} />
+        <Route path="/print/invoice/:id" element={<RequireSession><PrintInvoice /></RequireSession>} />
+        <Route path="/print/letter/:customerId" element={<RequireSession><PrintLetter /></RequireSession>} />
+        <Route path="/print/pack/:id" element={<RequireSession><PrintPack /></RequireSession>} />
         <Route element={<RequireSession><Layout /></RequireSession>}>
           <Route index element={<Dashboard />} />
           <Route path="radar" element={<Radar />} />

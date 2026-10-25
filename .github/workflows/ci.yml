@@ -1,4 +1,4 @@
-# Checks every push and pull request. pages.yml only runs tests on main, after the change has landed.
+# Checks every push and pull request. The Postgres service lets the data API tests run against a real database.
 name: CI
 
 on:
@@ -11,6 +11,17 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: harbor
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:ci@localhost:5432/harbor
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

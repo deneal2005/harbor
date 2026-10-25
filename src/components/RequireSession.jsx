@@ -1,14 +1,17 @@
-// Puts every workspace screen behind the device key. The customer-facing routes
-// (/pay/:token, /print/*) stay outside this guard on purpose: customers follow
-// invitations and pay without signing in.
+// Puts every workspace screen behind the owner's sign-in and holds them until the ledger has loaded.
+// The customer pay link (/pay/:token) stays outside this guard on purpose: customers pay without
+// signing in.
 import { useSyncExternalStore } from 'react';
 import { Navigate, useLocation } from 'react-router';
 import { getSessionSnapshot, subscribeSession } from '../services/session.js';
+import { useStore } from '../store-context.js';
 
 export default function RequireSession({ children }) {
-  const signedIn = useSyncExternalStore(subscribeSession, getSessionSnapshot).signedIn;
+  const session = useSyncExternalStore(subscribeSession, getSessionSnapshot);
+  const { state, t } = useStore();
   const loc = useLocation();
-  if (signedIn) return children;
+  if (session.signedIn && state) return children;
   // Remember where the visitor wanted to go; Login sends them on after sign-in.
-  return <Navigate replace to="/login" state={{ from: loc.pathname + loc.search }} />;
+  if (session.checked && !session.signedIn) return <Navigate replace to="/login" state={{ from: loc.pathname + loc.search }} />;
+  return <p role="status" aria-live="polite" className="mx-auto max-w-xl p-6 text-muted">{t('common.loading')}</p>;
 }

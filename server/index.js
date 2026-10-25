@@ -1,11 +1,14 @@
-// Harbor web service: serves the built SPA and the endpoints that start and read the Render
-// Workflow cash-flow integrity check. Secrets (RENDER_API_KEY) stay on this server.
+// Harbor web service: serves the built SPA, the owner data API backed by Postgres (server/api.js),
+// and the endpoints that start and read the Render Workflow cash-flow integrity check.
+// Secrets (RENDER_API_KEY, DATABASE_URL) stay on this server.
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { minimizePayload, shapeErrors } from '../src/services/audit.js';
+import { dataRouter, seedDemo } from './api.js';
+import { createPool, migrate } from './db.js';
 
 const TASK = 'cash-flow-integrity-check';
 const RUN_ID = /^[A-Za-z0-9_-]{4,80}$/;
@@ -29,7 +32,7 @@ export function rateLimiter({ limit = 5, windowMs = 60000 } = {}) {
   };
 }
 
-// The app keeps a business's ledger in the browser, so an injected script could read all of it.
+// An injected script would run with the owner's session and could read the whole ledger.
 // Styles stay 'unsafe-inline' because React style props and Google Fonts need them; scripts do not.
 const CSP = [
   "default-src 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -49,14 +52,17 @@ function securityHeaders(req, res, next) {
   next();
 }
 
-export function createApp({ workflows, workflowSlug, distDir, limit, statusLimit = { limit: 120, windowMs: 60000 } } = {}) {
+export function createApp({ workflows, workflowSlug, distDir, limit, statusLimit = { limit: 120, windowMs: 60000 }, pool, dataLimits } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1); // Render terminates TLS in front of the service; use the client IP
   app.use(securityHeaders);
   const configured = !!(workflows && workflowSlug);
 
-  app.get('/api/health', (req, res) => res.json({ ok: true, service: 'marlo', workflowConfigured: configured }));
+  app.get('/api/health', (req, res) => res.json({ ok: true, service: 'marlo', workflowConfigured: configured, databaseConfigured: !!pool }));
+
+  if (pool) app.use('/api', dataRouter(pool, { rateLimiter, ...dataLimits }));
+  else app.use(['/api/auth', '/api/state', '/api/actions', '/api/pay'], (req, res) => res.status(503).json({ error: 'database-not-configured' }));
 
   app.post('/api/integrity-check', rateLimiter(limit), express.json({ limit: '1mb' }), async (req, res) => {
     if (!configured) return res.status(503).json({ error: 'workflow-not-configured' });
@@ -128,13 +134,25 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } else {
     console.warn('RENDER_API_KEY or WORKFLOW_SLUG not set: the integrity check will report "not configured".');
   }
+  let pool = null;
+  if (process.env.DATABASE_URL) {
+    pool = createPool(process.env.DATABASE_URL);
+    await migrate(pool);
+    // A demo login for judges and the video: created once when DEMO_PASSWORD is set; `npm run db:seed-demo` resets it.
+    if (process.env.DEMO_PASSWORD && !(await pool.query("SELECT 1 FROM owners WHERE email = 'demo@harbor.example'")).rowCount) {
+      await seedDemo(pool, { password: process.env.DEMO_PASSWORD });
+      console.log('Demo business created: demo@harbor.example');
+    }
+  } else {
+    console.warn('DATABASE_URL not set: sign-in and saved data are unavailable.');
+  }
   const port = Number(process.env.PORT) || 3000;
-  const server = createApp({ workflows, workflowSlug: process.env.WORKFLOW_SLUG, distDir: join(root, 'dist') })
+  const server = createApp({ workflows, workflowSlug: process.env.WORKFLOW_SLUG, distDir: join(root, 'dist'), pool })
     .listen(port, () => console.log(`Harbor listening on :${port}`));
   // Render sends SIGTERM on every deploy: finish in-flight requests, then exit.
   for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => {
     console.log(`${sig} received, closing`);
-    server.close(() => process.exit(0));
+    server.close(() => (pool ? pool.end() : Promise.resolve()).finally(() => process.exit(0)));
     setTimeout(() => process.exit(1), 10000).unref();
   });
 }

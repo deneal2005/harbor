@@ -1,6 +1,6 @@
 // The signed-out face of Harbor: the opening screen from the brand previews as a
-// real, working gate. It opens on sign-in and switches to creating an account (local-first: the
-// password digest never leaves the browser). The opening
+// real, working gate. It opens on sign-in and switches to creating an account; the server checks
+// the password and keeps the session in an HttpOnly cookie. The opening
 // choreography skips for ?state=login, reduced motion, low-end devices, hidden tabs
 // and one key press — every visitor reaches the settled page within moments.
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
@@ -12,8 +12,8 @@ import { HarborMark } from '../components/HarborMark.jsx';
 import { Button, Dialog } from '../components/ui.jsx';
 import {
   MIN_PASSWORD_LENGTH, createCredential, credentialEmail,
-  getSessionSnapshot, isEmail, normalizeEmail, removeCredential,
-  signIn, startSession, subscribeSession, weakPassword,
+  getSessionSnapshot, isEmail, normalizeEmail,
+  signIn, subscribeSession, weakPassword,
 } from '../services/session.js';
 import './login.css';
 
@@ -44,7 +44,6 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [formErr, setFormErr] = useState(null); // { msg, field?, to? } — `to` offers the other mode as the fix
-  const [notice, setNotice] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [stage, setStage] = useState(() => (playOpen ? 'intro' : 'settled'));
   const unitRef = useRef(null);
@@ -135,15 +134,14 @@ export default function Login() {
           setBusy(false);
           return setFormErr(r.error === 'email' ? { msg: t('login.err.email'), field: 'email' }
             : r.error === 'exists' ? { msg: t('login.err.exists'), to: 'signin' }
-            : r.error === 'storage' ? { msg: t('app.storageFail') }
-            : { msg: t('login.err.weak', { min: MIN_PASSWORD_LENGTH }), field: 'pwd' });
+            : r.error === 'weak' ? { msg: t('login.err.weak', { min: MIN_PASSWORD_LENGTH }), field: 'pwd' }
+            : { msg: t('app.offline') });
         }
-        startSession(r.email);
       } else {
         const r = await signIn(clean, pass);
         if (!r.ok) {
           setBusy(false);
-          if (r.error === 'noCredential') return setFormErr({ msg: t('login.err.noAccount'), to: 'setup' });
+          if (r.error !== 'badLogin') return setFormErr({ msg: t('app.offline') });
           setPassword('');
           return setFormErr({ msg: t('login.err.badLogin'), field: 'pwd' });
         }
@@ -155,7 +153,7 @@ export default function Login() {
       later(() => navigate(fromTarget(loc.state?.from), { replace: true }), DONE_MS);
     } catch {
       setBusy(false);
-      setFormErr({ msg: t('app.storageFail') });
+      setFormErr({ msg: t('app.offline') });
     }
   };
 
@@ -163,18 +161,8 @@ export default function Login() {
   const switchMode = (to) => {
     setMode(to);
     setFormErr(null);
-    setNotice(false);
     setPassword('');
     (isEmail(normalizeEmail(email)) ? pwdRef : emailRef).current?.focus();
-  };
-
-  // The honest "forgot" for a device-held password: remove the key, data stays,
-  // and the form switches to creating a fresh key.
-  const removeKey = () => {
-    removeCredential();
-    setForgotOpen(false);
-    switchMode('setup');
-    setNotice(true);
   };
 
   // Unlocked on arrival? straight to the workspaces the visitor asked for.
@@ -269,7 +257,6 @@ export default function Login() {
                   )}
                 </p>
               )}
-              {notice && <p className="lg-note" role="status">{t('login.removedNote')}</p>}
 
               <button type="submit" disabled={busy || done} className={`lg-btn lg-rv${busy ? ' busy' : ''}${done ? ' done' : ''}`}>
                 {done ? <Check size={16} className="lg-check" aria-hidden="true" />
@@ -296,7 +283,7 @@ export default function Login() {
       </main>
 
       <Dialog open={forgotOpen} onClose={() => setForgotOpen(false)} title={t('login.forgotTitle')}
-        footer={<Button variant="danger" onClick={removeKey}>{t('login.removeKey')}</Button>}>
+        footer={<Button onClick={() => setForgotOpen(false)}>{t('app.close')}</Button>}>
         <p>{t('login.forgotBody')}</p>
       </Dialog>
     </div>

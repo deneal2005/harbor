@@ -210,3 +210,19 @@ export function buildSeed() {
     bankTxns: [], imports: [], inbox, trail, counters: { id: 1000 },
   };
 }
+
+// A new business's empty ledger: same shape as the demo, none of its records. The owner fills in the
+// profile (GST state, bank, UPI) in Settings before issuing the first invoice.
+export function buildEmpty({ email = '', today }) {
+  const seed = buildSeed();
+  return {
+    ...seed,
+    settings: { ...seed.settings, demoDate: today },
+    business: {
+      ...BUSINESS, name: 'My business', sample: false, address: '', state: '', stateCode: '', gstin: '', aggregateTurnoverPaise: 0,
+      udyam: { registered: false, category: '', number: '' }, owner: '', email, phone: '', bank: { name: '', account: '', ifsc: '' },
+      upiId: '', employees: 0, balanceDate: today, openingBalancePaise: 0, bufferPaise: 0, assumedWeeklySalesPaise: 0,
+    },
+    customers: [], invoices: [], payments: [], expenses: [], history: [], inbox: [], trail: [],
+  };
+}

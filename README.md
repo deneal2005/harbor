@@ -89,7 +89,7 @@ Default stages from the brief (editable): −3 days heads-up, due date, +7 firm,
 Opening WhatsApp, email or SMS only **prepares** a message (logged as *prepared*). The owner must press **I sent it** after actually sending. Harbor sends nothing automatically.
 
 ### Customer page and Inbox
-`/pay/:token` shows the invoice, payments recorded, the remaining balance, payment instructions with a **Pay by UPI** button and QR for the remaining balance (a `upi://` payment intent that proves nothing; hidden during an open dispute), and three actions: *I've already paid*, *Something's wrong*, *Send a message*. A payment claim creates an Inbox item and **never** marks the invoice paid; the owner must confirm it against evidence (or reject it with a reason). A dispute pauses reminders immediately. **Limitation:** with localStorage there is no shared backend, so this page works only in the same browser. It simulates the customer side.
+`/pay/:token` shows the invoice, payments recorded, the remaining balance, payment instructions with a **Pay by UPI** button and QR for the remaining balance (a `upi://` payment intent that proves nothing; hidden during an open dispute), and three actions: *I've already paid*, *Something's wrong*, *Send a message*. A payment claim creates an Inbox item and **never** marks the invoice paid; the owner must confirm it against evidence (or reject it with a reason). A dispute pauses reminders immediately. The page reads the invoice from the server by its random token, so it works on the customer's own phone without signing in.
 
 ### Bank reconciliation (`src/services/reconciliation.js`)
 CSV columns `date, description, reference, amount`. For each credit: extract invoice references (tolerant of `INV-26-27-0007`, `inv 26 27 0007`, …), match customer names only when every significant word matches, compare in paise, then suggest **exact / partial / multi-invoice / possible TDS / overpayment / unmatched** with a confidence level and a plain reason. Nothing changes until the owner presses **Confirm and apply**.
@@ -149,25 +149,35 @@ If the server has no credentials it returns 503 and the UI says **no check was r
 4. Set `WORKFLOW_SLUG` on the web service to that slug and redeploy.
 5. **Verify a run:** open the live app → Cash forecast → Run Cash-Flow Integrity Check. The run ID appears in the UI and in the Workflow's *Runs* tab in the Dashboard.
 
-Health/readiness: `GET /api/health` → `{ ok, service, workflowConfigured }`. Starts are rate-limited to 5 per minute per client IP (in-memory; move it to Render Key Value if you run several instances), because each check starts paid Workflow runs.
+Health/readiness: `GET /api/health` → `{ ok, service, workflowConfigured, databaseConfigured }`. Starts are rate-limited to 5 per minute per client IP (in-memory; move it to Render Key Value if you run several instances), because each check starts paid Workflow runs.
 
-## Deploy to GitHub Pages
+## Accounts and data
 
-`.github/workflows/pages.yml` runs the tests, builds with `BASE_PATH=/<repo>/` and `VITE_STATIC=1`, copies `index.html` to `404.html` (so deep links work), and publishes `dist/` on every push to `main`. One-time setup: repository **Settings → Pages → Source: GitHub Actions**. The static site has no server, so the Cash-Flow Integrity Check shows a note there instead of a button; everything else runs in the browser.
+Each business signs up with an email and password and sees only its own books. Data lives in Render Postgres (`harbor-db` in `render.yaml`, a paid plan with daily backups), behind the Express server:
+
+- **One JSONB ledger per business** (`server/schema.sql`). Every change goes to `POST /api/actions/:name`, and the server runs the **same pure transition** from `src/services/actions.js` the browser runs, inside a transaction that locks the ledger row. The money rules (integer paise, `gst.js`, the forecast) exist once and are shared.
+- The browser applies an action at once and sends it with the ledger version it builds on. If the server refuses (offline, or another device changed the books first), the change is undone and a banner says so.
+- **Sign-in:** scrypt password hashes (`node:crypto`), an HttpOnly `SameSite=Lax` session cookie stored as a sha256 hash, a 30-day sliding expiry, and writes that must be JSON from the same origin. There is no password-reset email yet.
+- **Customer pay link:** `GET /api/pay/:token` returns only that invoice's figures. The customer's "I paid" / "something's wrong" / message goes through `customerClaim`, `raiseDispute` and `customerMessage` on the server. Pay tokens are 128-bit random.
+- **Data from before accounts:** the first sign-in on a browser that still has the old local data offers to import it into an empty account.
+- **Demo:** set `DEMO_PASSWORD` on the web service to create `demo@harbor.example` with the sample data. `npm run db:seed-demo` resets it. Only the demo business has the demo date controls and *Reset demo*. A real business's "today" is the calendar date in India.
+- **Backups:** Render's daily backups on the paid database plan, plus *Settings → Export data* for the owner's own copy.
 
 ## Run locally
 
 ```bash
 npm install
-npm test          # 125 automated tests (vitest)
+docker run -d -p 5433:5432 -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=harbor postgres:16
+export DATABASE_URL=postgres://postgres:dev@localhost:5433/harbor DEMO_PASSWORD=choose-one
+npm test          # automated tests (vitest); the data API tests run only when DATABASE_URL is set
 npm run build     # production build into dist/
-npm start         # serves dist/ + API on http://localhost:3000
-npm run dev       # Vite dev server on :5173 (proxies /api to :3000 if npm start is running)
+npm start         # serves dist/ + API on http://localhost:3000 (creates the tables on start)
+npm run dev       # Vite dev server on :5173 (proxies /api to :3000 while npm start is running)
 ```
 
-Requires Node 20+. Copy `.env.example` to `.env` (or export the variables) only if you want to call a real Render Workflow from your machine.
+Requires Node 20+. Without `DATABASE_URL` the server still starts, but sign-in and saved data answer 503. See `.env.example` for every variable.
 
-**Reset Demo:** Settings → *Reset demo* restores the exact original dataset (deterministic seed, `src/data/seed.js`). **Demo Date:** Settings → +1 / +7 days, or pick a date, to watch reminder stages, ageing and the forecast change.
+**Reset Demo** (demo business only): Settings → *Reset demo* restores the original dataset (`src/data/seed.js`). **Demo Date:** Settings → +1 / +7 days, or pick a date, to watch reminder stages, ageing and the forecast change.
 
 ## Project structure
 
@@ -182,18 +192,21 @@ src/
   pages/       Dashboard, Radar, Forecast, FollowUps, Invoices, InvoiceDetail, NewInvoice,
                Customers, Inbox, Payments, Documents, Print, Escalation, Settings, CustomerPay
 server/index.js     Express: static SPA + /api/health + /api/integrity-check
+server/api.js       auth, ledger, /api/actions/:name, customer /api/pay/:token
+server/db.js, auth.js, schema.sql   Postgres access, sessions, tables
 workflows/main.js   Render Workflow tasks
-tests/              gst, engine, reconciliation, audit (incl. API), i18n
+tests/              gst, engine, reconciliation, audit (incl. API), i18n, session, server-db (Postgres)
 docs/               test report, Harbor requirement audit (HARBOR_AUDIT.md), demo script, pitch outline
 ```
 
-Stack: React 19, Vite, Tailwind CSS 4, React Router, plain JavaScript, localStorage, `qrcode`, `lucide-react` (icons), Express 5 (server only), `@renderinc/sdk`. One deliberate deviation from "no backend": the small Express server exists only to keep the Render API key server-side for the required Workflow integration. The product itself remains local-first.
+Stack: React 19, Vite, Tailwind CSS 4, React Router, plain JavaScript, `qrcode`, `lucide-react` (icons), Express 5, PostgreSQL (`pg`), `@renderinc/sdk`.
 
 ## Known limitations (honest list)
 
 - **No real Workflow run yet.** The web service is live on Render (https://harbor-app-g6jt.onrender.com), but the Workflow service and its environment variables are not set up, so the integrity check returns 503 there (see `docs/TEST_REPORT.md`, "Deployment status").
-- **localStorage only:** data lives in one browser, unencrypted, without backup or multi-user access. Not suitable for real financial records.
-- **Customer page is same-browser only** (no shared backend).
+- **One owner per business, no password-reset email:** staff accounts and email reset are not built. A forgotten password is reset by hand in the database.
+- **Other devices refresh on focus and once a minute**, not in real time. A change made against an older copy is refused and undone, never merged.
+- **Each change rewrites the business's whole ledger document.** That is fine for a small business (a few MB). A very large ledger would need the decision trail moved to its own table.
 - **No automatic messaging.** WhatsApp/email/SMS are owner-controlled handoffs.
 - **Tax rules not independently verified:** sample GST rates/HSN codes are illustrative; the e-invoicing threshold and MSME wording should be re-checked on official portals. No statutory interest is calculated.
 - **Hindi text** was written for this prototype and has **not** been professionally reviewed. Stored data (expense labels, invoice line descriptions) stays in the language it was entered in.
@@ -203,7 +216,7 @@ Stack: React 19, Vite, Tailwind CSS 4, React Router, plain JavaScript, localStor
 
 ## Next steps toward real use
 
-1. Shared backend with authentication and encrypted storage, so the customer page works across devices.
+1. Password-reset email, staff accounts, and an append-only decision-trail table.
 2. Bank statement formats from real Indian banks; Account Aggregator integration with explicit consent.
 3. Verified GST/e-invoice/MSME rules with a tax professional; e-invoice (IRP) integration if turnover requires it.
 4. WhatsApp Business Platform with approved templates and opt-in (optional, owner-enabled).

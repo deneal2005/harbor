@@ -95,7 +95,7 @@ export function ScenarioPanel({ changes, setChanges, kinds = ['collect', 'partia
   const scenario = useScenario(changes);
   const openInv = state.invoices.filter((i) => isOpen(state, i) && !i.dispute);
   const [kind, setKind] = useState(kinds[0]);
-  const [f, setF] = useState({ invoiceId: openInv[0]?.id ?? '', date: addDays(today, 3), amount: '', customerId: state.customers[0].id, occurrenceId: '', orderAmount: '200000', orderCollect: addDays(today, 50), orderCost: '80000', orderCostDate: addDays(today, 10) });
+  const [f, setF] = useState({ invoiceId: openInv[0]?.id ?? '', date: addDays(today, 3), amount: '', customerId: state.customers[0]?.id ?? '', occurrenceId: '', orderAmount: '200000', orderCollect: addDays(today, 50), orderCost: '80000', orderCostDate: addDays(today, 10) });
   const [err, setErr] = useState(null);
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
   const supplierOcc = forecast.expenses.filter((e) => e.category === 'supplier');

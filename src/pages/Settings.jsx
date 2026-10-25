@@ -17,7 +17,7 @@ import { validateGstin } from '../utils/gstin.js';
 import { paiseToRupeeInput, rupeesToPaise } from '../utils/money.js';
 
 export default function Settings() {
-  const { t, state, run, reset, notify, date } = useStore();
+  const { t, state, run, reset, notify, date, demo } = useStore();
   const b = state.business;
   const [f, setF] = useState(() => ({
     name: b.name, address: b.address, stateCode: b.stateCode, gstin: b.gstin, registrationType: b.registrationType, turnover: paiseToRupeeInput(b.aggregateTurnoverPaise),
@@ -86,19 +86,25 @@ export default function Settings() {
         </div>
       </Card>
 
-      <Card title={t('set.demo')} tone="brand">
-        <p className="text-sm">{t('set.demoDateHint', { date: date(DEMO_DATE) })}</p>
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <Field label={t('app.demoDate')} className="w-48">{(p) => <input {...p} type="date" className={inputCls} value={state.settings.demoDate} onChange={(e) => isValidDate(e.target.value) && setDate(e.target.value)} />}</Field>
-          <Button onClick={() => setDate(addDays(state.settings.demoDate, 1))}>{t('set.plus1')}</Button>
-          <Button onClick={() => setDate(addDays(state.settings.demoDate, 7))}>{t('set.plus7')}</Button>
-          <Button onClick={() => setDate(DEMO_DATE)}>{t('set.resetDate', { date: date(DEMO_DATE) })}</Button>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="danger" icon={RotateCcw} onClick={() => setConfirmReset(true)}>{t('set.reset')}</Button>
+      {demo ? (
+        <Card title={t('set.demo')} tone="brand">
+          <p className="text-sm">{t('set.demoDateHint', { date: date(DEMO_DATE) })}</p>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <Field label={t('app.demoDate')} className="w-48">{(p) => <input {...p} type="date" className={inputCls} value={state.settings.demoDate} onChange={(e) => isValidDate(e.target.value) && setDate(e.target.value)} />}</Field>
+            <Button onClick={() => setDate(addDays(state.settings.demoDate, 1))}>{t('set.plus1')}</Button>
+            <Button onClick={() => setDate(addDays(state.settings.demoDate, 7))}>{t('set.plus7')}</Button>
+            <Button onClick={() => setDate(DEMO_DATE)}>{t('set.resetDate', { date: date(DEMO_DATE) })}</Button>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="danger" icon={RotateCcw} onClick={() => setConfirmReset(true)}>{t('set.reset')}</Button>
+            <Button icon={Download} onClick={exportData}>{t('set.export')}</Button>
+          </div>
+        </Card>
+      ) : (
+        <Card title={t('set.backup')} hint={t('set.backupHint')} icon={Download}>
           <Button icon={Download} onClick={exportData}>{t('set.export')}</Button>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       <Card title={t('set.display')} icon={Languages}>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -185,7 +191,7 @@ export default function Settings() {
       <div className="flex justify-end"><Button variant="primary" onClick={save}>{t('common.save')}</Button></div>
       <Card title={t('set.privacy')}><p className="text-sm">{t('set.privacyBody')}</p></Card>
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} title={t('set.reset')}
-        footer={<><Button onClick={() => setConfirmReset(false)}>{t('common.cancel')}</Button><Button variant="danger" icon={RotateCcw} onClick={() => { reset(); setConfirmReset(false); notify(t('set.resetDone')); }}>{t('set.reset')}</Button></>}>
+        footer={<><Button onClick={() => setConfirmReset(false)}>{t('common.cancel')}</Button><Button variant="danger" icon={RotateCcw} onClick={async () => { const ok = await reset(); setConfirmReset(false); notify(ok ? t('set.resetDone') : t('app.storageFail'), ok ? 'ok' : 'error'); }}>{t('set.reset')}</Button></>}>
         <p>{t('set.resetConfirm')}</p>
       </Dialog>
     </Page>
