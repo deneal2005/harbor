@@ -82,7 +82,7 @@ function Nav({ onNavigate }) {
 let brandDocked = false;
 
 function Brand({ onNavigate }) {
-  const { t, state } = useStore();
+  const { t, state, demo } = useStore();
   useEffect(() => { brandDocked = true; }, []);
   return (
     <Link to="/" onClick={onNavigate} title={t('nav.dashboard')}
@@ -90,7 +90,7 @@ function Brand({ onNavigate }) {
       <HarborMark decorative dock={!brandDocked} className="h-9 w-9" />
       <div className="min-w-0">
         <div className="brand-word text-lg leading-tight text-white">HARBOR</div>
-        <div className="truncate text-xs text-white/50">{state.business.name} · {t('app.demoChip')}</div>
+        <div className="truncate text-xs text-white/50">{state.business.name}{demo && ` · ${t('app.demoChip')}`}</div>
       </div>
     </Link>
   );
@@ -108,7 +108,8 @@ function DateChip({ compact }) {
 }
 
 function SampleChip() {
-  const { t } = useStore();
+  const { t, demo } = useStore();
+  if (!demo) return null;
   return <span title={t('app.sample')} className="hidden items-center gap-1.5 rounded-full bg-warn-soft px-2.5 py-1 text-xs font-medium text-warn ring-1 ring-inset ring-warn/20 md:inline-flex"><span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />{t('app.demoChip')}</span>;
 }
 
@@ -144,7 +145,7 @@ function OutlookNotice({ o }) {
 }
 
 export default function Layout() {
-  const { t, storageOk, toast, outlook, currency, rate } = useStore();
+  const { t, storageOk, toast, outlook, currency, rate, importable, finishImport } = useStore();
   const controls = useDisplayControls();
   const counts = useCounts();
   const lowEnd = isLowEndDevice(); // the Animations switch is only offered on low-powered devices
@@ -213,6 +214,13 @@ export default function Layout() {
           {searching && <div className="px-4 pb-3 lg:hidden"><SearchBox autoFocus onDone={() => setSearchAt(null)} /></div>}
         </header>
         {!storageOk && <div role="alert" className="no-print bg-danger px-4 py-2 text-sm text-white">{t('app.storageFail')}</div>}
+        {importable && (
+          <div role="status" className="no-print flex flex-wrap items-center gap-3 bg-brand-soft px-4 py-2 text-sm">
+            <span>{t('app.importOffer', { n: importable.invoices.length })}</span>
+            <button type="button" onClick={() => finishImport(true)} className="min-h-10 rounded-lg bg-brand px-3 font-medium text-white">{t('app.importYes')}</button>
+            <button type="button" onClick={() => finishImport(false)} className="min-h-10 rounded-lg px-3 font-medium">{t('app.importNo')}</button>
+          </div>
+        )}
         <main id="main" tabIndex={-1} key={loc.pathname}><Outlet /></main>
       </div>
 

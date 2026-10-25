@@ -43,7 +43,8 @@ export function saveInvoice(state, form, { issue }) {
     docType: calc.docType, taxablePaise: calc.taxablePaise, totalPaise: calc.totalPaise,
     status: issue ? 'issued' : 'draft', number: issue ? nextInvoiceNumber(s.invoices, form.date, s.business.invoicePrefix) : null,
   });
-  if (issue) inv.token = `p${inv.id.replace(/\D/g, '')}${inv.number.replace(/\D/g, '').slice(-4)}`;
+  // The pay link is the only key a customer has, so it must not be guessable from the invoice number.
+  if (issue) inv.token = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   if (!existing) s.invoices.push(inv);
   logEvent(s, issue ? 'invoice-issued' : 'invoice-draft', { invoiceId: inv.id, amountPaise: calc.totalPaise, number: inv.number });
   return { state: s, invoiceId: inv.id };

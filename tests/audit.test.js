@@ -64,7 +64,7 @@ describe('integrity-check API', () => {
   const post = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
   it('health reports workflow configuration', async () => {
-    expect(await (await fetch(`${base}/api/health`)).json()).toEqual({ ok: true, service: 'marlo', workflowConfigured: true });
+    expect(await (await fetch(`${base}/api/health`)).json()).toEqual({ ok: true, service: 'marlo', workflowConfigured: true, databaseConfigured: false });
   });
   it('starts the real task slug with a minimised payload and idempotency key, then returns the report', async () => {
     const res = await post(`${base}/api/integrity-check`, { ...payloadFor(buildSeed()), extra: 'drop me' });

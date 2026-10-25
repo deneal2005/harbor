@@ -1,24 +1,21 @@
-import { expect, it, describe } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  CREDENTIAL_KEY, MIN_PASSWORD_LENGTH, SESSION_KEY, createCredential, credentialEmail,
-  credentialExists, endSession, getSessionSnapshot, isEmail, normalizeEmail, removeCredential,
-  signIn, startSession, subscribeSession, verifyCredential, weakPassword,
+  MIN_PASSWORD_LENGTH, checkSession, createCredential, endSession, getSessionSnapshot, isEmail, normalizeEmail,
+  signIn, subscribeSession, weakPassword,
 } from '../src/services/session.js';
 
-// Stand-in stores: the services take storage as a parameter so tests never touch real devices.
-const makeStore = () => {
-  const m = new Map();
-  return {
-    getItem: (k) => (m.has(k) ? m.get(k) : null),
-    setItem: (k, v) => m.set(k, String(v)),
-    removeItem: (k) => m.delete(k),
-    clear: () => m.clear(),
-    has: (k) => m.has(k),
-  };
+// Stand-in server: each call answers with the next queued { status, body }; requests are recorded.
+const server = (...answers) => {
+  const calls = [];
+  vi.stubGlobal('fetch', async (path, init = {}) => {
+    calls.push({ path, method: init.method || 'GET', body: init.body && JSON.parse(init.body) });
+    const a = answers.shift();
+    if (a === 'offline') throw new TypeError('Failed to fetch');
+    return { status: a.status, json: async () => a.body };
+  });
+  return calls;
 };
-const CRYPTO = globalThis.crypto;
-// Lower iterations in tests: the record stores the count, so the flow is unchanged.
-const OPTS = (m) => ({ storage: m, cryptoObj: CRYPTO, iterations: 31000 });
+afterEach(() => vi.unstubAllGlobals());
 
 describe('session — email and password hygiene', () => {
   it('normalises email casing and padding', () => {
@@ -38,88 +35,31 @@ describe('session — email and password hygiene', () => {
   });
 });
 
-describe('session — the device key', () => {
-  it('creates the key on first run and denies a second one', async () => {
-    const storage = makeStore();
-    const ok = await createCredential({ email: 'Owner@Shop.in', password: 'harbor-pass' }, OPTS(storage));
-    expect(ok).toEqual({ ok: true, email: 'owner@shop.in' });
-    expect(credentialExists(storage)).toBe(true);
-    expect(credentialEmail(storage)).toBe('owner@shop.in');
-    const again = await createCredential({ email: 'x@y.in', password: 'harbor-pass' }, OPTS(storage));
-    expect(again).toEqual({ ok: false, error: 'exists' });
-  });
-
-  it('stores only salt + digest: the password never lands in the record', async () => {
-    const storage = makeStore();
-    await createCredential({ email: 'o@s.in', password: 'secret-pass-9' }, OPTS(storage));
-    const raw = storage.getItem(CREDENTIAL_KEY);
-    expect(raw).not.toContain('secret-pass-9');
-    const cred = JSON.parse(raw);
-    expect(Object.keys(cred).sort()).toEqual(['email', 'hash', 'iterations', 'salt']);
-    expect(cred.hash.length).toBeGreaterThan(20);
-    expect(cred.salt.length).toBeGreaterThan(20);
-  });
-
-  it('verifies the right password and rejects the wrong one', async () => {
-    const storage = makeStore();
-    await createCredential({ email: 'o@s.in', password: 'right-pass' }, OPTS(storage));
-    expect(await verifyCredential('o@s.in', 'right-pass', OPTS(storage))).toBe(true);
-    expect(await verifyCredential('o@s.in', 'wrong-pass', OPTS(storage))).toBe(false);
-    expect(await verifyCredential('other@s.in', 'right-pass', OPTS(storage))).toBe(false);
-  });
-
-  it('refuses weak, malformed or duplicate first-run inputs', async () => {
-    const storage = makeStore();
-    expect((await createCredential({ email: 'bad', password: 'long-pass' }, OPTS(storage))).error).toBe('email');
-    expect((await createCredential({ email: 'o@s.in', password: 'tiny' }, OPTS(storage))).error).toBe('weak');
-  });
-
-  it('removing the key hands the device back to first-run setup', async () => {
-    const storage = makeStore();
-    await createCredential({ email: 'o@s.in', password: 'right-pass' }, OPTS(storage));
-    expect(removeCredential(storage)).toBe(true);
-    expect(credentialExists(storage)).toBe(false);
-  });
-
-  it('works with a blocked or missing store without throwing', async () => {
-    expect(credentialExists(null)).toBe(false);
-    expect(removeCredential(null)).toBe(false);
-    await expect(createCredential({ email: 'o@s.in', password: 'long-pass' }, { storage: null, cryptoObj: CRYPTO })).resolves.toEqual({ ok: false, error: 'storage' });
-  });
-});
-
-describe('session — sign in / sign out', () => {
-  it('signs in with the right password and starts a session', async () => {
-    const cred = makeStore(); const sess = makeStore();
-    await createCredential({ email: 'O@S.in', password: 'right-pass' }, OPTS(cred));
-    const bad = await signIn('O@S.in', 'wrong-pass', { ...OPTS(cred), sessionStorage: sess });
-    expect(bad).toEqual({ ok: false, error: 'badLogin' });
-    const good = await signIn('O@S.in', 'right-pass', { ...OPTS(cred), sessionStorage: sess });
-    expect(good).toEqual({ ok: true, email: 'o@s.in' });
-    expect(JSON.parse(sess.getItem(SESSION_KEY)).email).toBe('o@s.in');
-  });
-
-  it('reports a missing device key as noCredential', async () => {
-    const bad = await signIn('O@S.in', 'right-pass', { storage: makeStore(), sessionStorage: makeStore(), cryptoObj: CRYPTO });
-    expect(bad).toEqual({ ok: false, error: 'noCredential' });
-  });
-
-  it('ending the session clears the device record', () => {
-    const sess = makeStore();
-    startSession('o@s.in', { storage: sess });
-    endSession({ storage: sess });
-    expect(sess.getItem(SESSION_KEY)).toBe(null);
-  });
-
-  it('the published snapshot subscriptions fire on changes', () => {
-    const sess = makeStore();
+describe('session — server sign in / sign out', () => {
+  it('signs in through the server and publishes the snapshot', async () => {
+    const calls = server({ status: 401, body: { error: 'badLogin' } }, { status: 200, body: { email: 'o@s.in', demo: false } });
+    expect(await signIn(' O@S.in ', 'wrong-pass')).toEqual({ ok: false, error: 'badLogin' });
     const seen = [];
-    const off = subscribeSession((snap) => seen.push(snap.signedIn));
-    startSession('o@s.in', { storage: sess });
-    endSession({ storage: sess });
+    const off = subscribeSession((s) => seen.push(s.signedIn));
+    expect(await signIn('O@S.in', 'right-pass')).toEqual({ ok: true, email: 'o@s.in' });
     off();
-    expect(seen).toEqual([true, false]);
+    expect(calls[1]).toEqual({ path: '/api/auth/login', method: 'POST', body: { email: 'o@s.in', password: 'right-pass' } });
+    expect(seen).toEqual([true]);
+    expect(getSessionSnapshot()).toMatchObject({ checked: true, signedIn: true, email: 'o@s.in' });
+  });
+
+  it('reports an existing account and an unreachable server', async () => {
+    server({ status: 409, body: { error: 'exists' } }, 'offline');
+    expect(await createCredential({ email: 'o@s.in', password: 'long-enough' })).toEqual({ ok: false, error: 'exists' });
+    expect(await createCredential({ email: 'o@s.in', password: 'long-enough' })).toEqual({ ok: false, error: 'offline' });
+  });
+
+  it('sign-out and an expired cookie both end the snapshot', async () => {
+    server({ status: 200, body: { email: 'o@s.in', demo: true } }, { status: 200, body: { ok: true } }, { status: 401, body: {} });
+    expect((await checkSession()).demo).toBe(true);
+    await endSession();
     expect(getSessionSnapshot().signedIn).toBe(false);
+    expect((await checkSession()).signedIn).toBe(false);
   });
 
   it('the snapshot is stable between publishes (safe for useSyncExternalStore)', async () => {

@@ -1,6 +1,6 @@
 # Plan: Postgres data layer and owner login
 
-Status: **draft for review.** No code changes until this is approved.
+Status: **approved and implemented** with the recommended defaults (JSONB ledger, trail table later, basic-256mb, Pages dropped). One change in the build: `run()` stays synchronous and applies the action locally first, then sends it with the ledger version it builds on; a refusal (409 stale, 422 rule, offline) puts the server copy back. That kept all ~50 call sites unchanged.
 
 ## Goal
 

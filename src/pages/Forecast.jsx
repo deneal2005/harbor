@@ -44,8 +44,6 @@ function IntegrityCheck() {
 
   const busy = run.phase === 'starting' || run.phase === 'running';
   const r = run.report;
-  // Static hosting (GitHub Pages) has no Node server, so the server-backed check is replaced by a note.
-  if (import.meta.env.VITE_STATIC === '1') return <Card title={t('audit.title')}><p className="text-sm text-muted">{t('audit.static')}</p></Card>;
   return (
     <Card title={t('audit.title')} tone="brand">
       <p className="text-sm">{t('audit.body')}</p>
