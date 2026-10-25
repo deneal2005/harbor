@@ -497,11 +497,9 @@
   width: 100%;
 }
 
+/* Inline flow, not flex: when the line wraps, the shield stays beside the first word */
 .lg-trust {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
+  display: block;
   margin: 0;
   padding: 0;
   background: transparent;
@@ -515,7 +513,7 @@
   text-align: center;
 }
 
-.lg-trust svg { width: 15px; height: 15px; color: var(--lg-teal); flex-shrink: 0; }
+.lg-trust svg { width: 15px; height: 15px; color: var(--lg-teal); display: inline-block; vertical-align: -3px; margin-right: 6px; }
 
 @media (max-width: 840px) {
   .lg-shell {
