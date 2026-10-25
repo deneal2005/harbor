@@ -49,7 +49,10 @@ function payView(state, { invoice_id: invoiceId, token }) {
 export function dataRouter(pool, { rateLimiter, authLimit = { limit: 10, windowMs: 60000 }, payLimit = { limit: 20, windowMs: 60000 } }) {
   const r = express.Router();
   // Scoped to this router's paths so unknown /api paths still reach the JSON 404 in index.js.
-  r.use(['/auth', '/state', '/actions', '/pay'], express.json({ limit: '10mb' }), sameOrigin);
+  // Only ledger writes carry big bodies (browser import, logo). The public pay endpoints and sign-in stay small.
+  r.use(['/state', '/actions'], express.json({ limit: '10mb' }));
+  r.use(['/auth', '/account', '/pay'], express.json({ limit: '16kb' }));
+  r.use(['/auth', '/account', '/state', '/actions', '/pay'], sameOrigin);
   const owner = requireOwner(pool);
 
   // ---- auth -------------------------------------------------------------------
@@ -77,6 +80,7 @@ export function dataRouter(pool, { rateLimiter, authLimit = { limit: 10, windowM
   r.post('/auth/login', rateLimiter(authLimit), async (req, res) => {
     if (credentialsError(req.body ?? {}, false)) return res.status(401).json({ error: 'badLogin' });
     const o = await login(pool, req.body.email, req.body.password);
+    if (o?.locked) return res.status(429).json({ error: 'locked' });
     if (!o) return res.status(401).json({ error: 'badLogin' });
     await startSession(pool, res, req, o.id);
     const { rows: [b] } = await pool.query('SELECT demo FROM businesses WHERE id = $1', [o.business_id]);
@@ -89,6 +93,20 @@ export function dataRouter(pool, { rateLimiter, authLimit = { limit: 10, windowM
   });
 
   r.get('/auth/me', owner, (req, res) => res.json({ email: req.owner.email, demo: req.owner.demo }));
+
+  // Permanently delete the owner's business: the password is asked again (and throttled like sign-in).
+  // The cascade removes the owner, sessions, ledger and pay links. The shared demo login cannot be deleted.
+  r.post('/account/delete', rateLimiter(authLimit), owner, async (req, res) => {
+    if (req.owner.demo) return res.status(403).json({ error: 'demo-only' });
+    const password = req.body?.password;
+    if (credentialsError({ email: req.owner.email, password }, false)) return res.status(403).json({ error: 'badPassword' });
+    const o = await login(pool, req.owner.email, password);
+    if (o?.locked) return res.status(429).json({ error: 'locked' });
+    if (!o) return res.status(403).json({ error: 'badPassword' });
+    await pool.query('DELETE FROM businesses WHERE id = $1', [req.owner.businessId]);
+    res.clearCookie('harbor_session', { path: '/' });
+    res.json({ ok: true });
+  });
 
   // ---- the owner's ledger ----------------------------------------------------------
   r.get('/state', owner, async (req, res) => {

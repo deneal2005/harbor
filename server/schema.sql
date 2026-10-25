@@ -30,6 +30,14 @@ CREATE TABLE IF NOT EXISTS ledgers (
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- Wrong-password counts per email (known or not), for the per-account sign-in throttle in auth.js.
+CREATE TABLE IF NOT EXISTS login_failures (
+  email     text PRIMARY KEY,                   -- lower-cased
+  failures  integer NOT NULL,
+  last_at   timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS login_failures_last ON login_failures (last_at);
+
 -- Customer pay links: find the business behind a link without scanning every ledger.
 CREATE TABLE IF NOT EXISTS pay_tokens (
   token       text PRIMARY KEY,

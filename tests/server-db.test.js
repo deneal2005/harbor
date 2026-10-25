@@ -3,6 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../server/index.js';
 import { seedDemo } from '../server/api.js';
+import { LOCK_AFTER } from '../server/auth.js';
 import { createPool, migrate, todayIST } from '../server/db.js';
 import { buildSeed } from '../src/data/seed.js';
 
@@ -170,5 +171,64 @@ describe.skipIf(!url)('data API (Postgres)', () => {
     expect((await c.get('/api/auth/me')).status).toBe(200);
     await c.post('/api/auth/logout');
     expect((await c.get('/api/auth/me')).status).toBe(401);
+  });
+
+  it('locks an email after 5 wrong passwords, even with the right one, until 15 quiet minutes pass', async () => {
+    const c = await signup();
+    const unknown = `${uniq()}@nobody.example`;
+    for (let i = 0; i < LOCK_AFTER; i++) {
+      expect((await client().post('/api/auth/login', { email: c.email, password: 'wrong-password' })).status).toBe(401);
+      expect((await client().post('/api/auth/login', { email: unknown, password: 'wrong-password' })).status).toBe(401);
+    }
+    // Same answer for a real and an unknown email, so the lock does not reveal which accounts exist.
+    expect((await client().post('/api/auth/login', { email: c.email, password: 'long-enough-pw' })).body).toEqual({ error: 'locked' });
+    expect((await client().post('/api/auth/login', { email: unknown, password: 'long-enough-pw' })).body).toEqual({ error: 'locked' });
+    expect((await client().post('/api/auth/login', { email: c.email.toUpperCase(), password: 'long-enough-pw' })).status).toBe(429);
+
+    await pool.query("UPDATE login_failures SET last_at = now() - interval '16 minutes' WHERE email = $1", [c.email]);
+    expect((await client().post('/api/auth/login', { email: c.email, password: 'long-enough-pw' })).status).toBe(200);
+    expect((await pool.query('SELECT 1 FROM login_failures WHERE email = $1', [c.email])).rowCount).toBe(0);
+  });
+
+  it('a success clears the count, so occasional typos never add up to a lock', async () => {
+    const c = await signup();
+    for (let round = 0; round < 2; round++) {
+      for (let i = 0; i < LOCK_AFTER - 1; i++) await client().post('/api/auth/login', { email: c.email, password: 'typo-password' });
+      expect((await client().post('/api/auth/login', { email: c.email, password: 'long-enough-pw' })).status).toBe(200);
+    }
+  });
+
+  it('deletes an account and all of its data only with the right password; never the demo', async () => {
+    const c = await signup();
+    await c.action('addCustomer', { name: 'Gone Traders', stateCode: '27' });
+    const { rows: [o] } = await pool.query('SELECT business_id FROM owners WHERE email = $1', [c.email]);
+    expect((await c.post('/api/account/delete', {})).status).toBe(403);
+    expect((await c.post('/api/account/delete', { password: 'not-my-password' })).body).toEqual({ error: 'badPassword' });
+    expect((await client().post('/api/account/delete', { password: 'long-enough-pw' })).status).toBe(401);
+    expect((await c.post('/api/account/delete', { password: 'long-enough-pw' }, { origin: 'https://evil.example' })).status).toBe(403);
+
+    const r = await c.post('/api/account/delete', { password: 'long-enough-pw' });
+    expect(r.status).toBe(200);
+    expect((await c.get('/api/state')).status).toBe(401);
+    expect((await client().post('/api/auth/login', { email: c.email, password: 'long-enough-pw' })).status).toBe(401);
+    for (const table of ['businesses', 'ledgers', 'pay_tokens']) {
+      const col = table === 'businesses' ? 'id' : 'business_id';
+      expect((await pool.query(`SELECT 1 FROM ${table} WHERE ${col} = $1`, [o.business_id])).rowCount, table).toBe(0);
+    }
+    expect((await pool.query('SELECT 1 FROM owners WHERE email = $1', [c.email])).rowCount).toBe(0);
+    // The email is free again for a new account.
+    expect((await client().post('/api/auth/signup', { email: c.email, password: 'long-enough-pw' })).status).toBe(201);
+
+    const d = await demo();
+    expect((await d.post('/api/account/delete', { password: 'demo-password' })).body).toEqual({ error: 'demo-only' });
+  });
+
+  it('caps public pay-link bodies at 16 kB while ledger writes may stay large', async () => {
+    const owner = await demo();
+    const inv = (await owner.get('/api/state')).body.state.invoices.find((i) => i.token && i.status !== 'draft');
+    const big = await client().post(`/api/pay/${inv.token}/message`, { message: 'x'.repeat(20000) });
+    expect(big).toMatchObject({ status: 413, body: { error: 'too-large' } });
+    expect((await client().post(`/api/pay/${inv.token}/message`, { message: 'Will pay Friday' })).status).toBe(200);
+    expect((await owner.post('/api/actions/addCustomer', { args: [{ name: 'y'.repeat(20000), stateCode: '27' }] })).status).not.toBe(413);
   });
 });
