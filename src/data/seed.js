@@ -19,8 +19,8 @@ export const BUSINESS = {
   registrationType: 'regular',
   aggregateTurnoverPaise: 2_40_00_000_00, // ₹2.4 crore (below the e-invoicing threshold)
   udyam: { registered: true, category: 'micro', number: 'UDYAM-MH-26-0000000 (sample)' },
-  owner: 'Rakesh Sharma',
-  email: 'rakesh@sharma-packaging.example',
+  owner: 'Deneal Thangjam',
+  email: 'deneal@sharma-packaging.example',
   phone: '+91 90000 00000',
   bank: { name: 'Sample Bank (fictional)', account: '000000000000 (sample)', ifsc: 'SMPL0000000' },
   logo: null, // data URL (PNG/JPG, max 200 KB) set in Settings; older saved data simply has no logo
