@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Coins, Download, Languages, RotateCcw } from 'lucide-react';
+import { useState, useSyncExternalStore } from 'react';
+import { useNavigate } from 'react-router';
+import { Coins, Download, Languages, LogOut, RotateCcw, UserRound } from 'lucide-react';
 import { BusinessMark } from '../components/BusinessMark.jsx';
 import { useDisplayControls } from '../components/displayControls.jsx';
 import { useErrorText } from '../hooks/useErrorText.js';
@@ -8,8 +9,10 @@ import { DEMO_DATE } from '../data/seed.js';
 import { DEFAULT_FX } from '../data/config.js';
 import { LOGO_MAX_BYTES, updateBusiness, updateExpenses, updateSettings } from '../services/actions.js';
 import { CATEGORIES } from '../services/forecasting.js';
+import { endSession, getSessionSnapshot, subscribeSession } from '../services/session.js';
 import { useStore } from '../store-context.js';
 import { addDays, isValidDate } from '../utils/dates.js';
+import { initialsOf } from '../utils/initials.js';
 import { validateGstin } from '../utils/gstin.js';
 import { paiseToRupeeInput, rupeesToPaise } from '../utils/money.js';
 
@@ -40,6 +43,9 @@ export default function Settings() {
   const set =(k) => (e) => setF((x) => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
   const gst = validateGstin(f.gstin);
   const controls = useDisplayControls();
+  const navigate = useNavigate();
+  const session = useSyncExternalStore(subscribeSession, getSessionSnapshot);
+  const signOut = () => { endSession(); navigate('/login', { replace: true }); };
   const [confirmReset, setConfirmReset] = useState(false);
   const [rates, setRates] = useState(() => Object.fromEntries(['USD', 'EUR', 'JPY'].map((c) => [c, String(state.settings.fxRates?.[c] ?? DEFAULT_FX[c])])));
 
@@ -67,6 +73,19 @@ export default function Settings() {
 
   return (
     <Page title={t('set.title')}>
+      <Card title={t('session.account')} hint={t('session.signOutHint')} icon={UserRound}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand/10 text-sm font-semibold text-brand" aria-hidden="true">{initialsOf(b.owner || session.email)}</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">{b.owner || session.email}</p>
+              <p className="truncate text-sm text-muted">{t('session.signedInAs', { email: session.email ?? '' })}</p>
+            </div>
+          </div>
+          <Button variant="danger" icon={LogOut} onClick={signOut}>{t('session.signOut')}</Button>
+        </div>
+      </Card>
+
       <Card title={t('set.demo')} tone="brand">
         <p className="text-sm">{t('set.demoDateHint', { date: date(DEMO_DATE) })}</p>
         <div className="mt-3 flex flex-wrap items-end gap-2">

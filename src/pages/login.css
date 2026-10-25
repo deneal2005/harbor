@@ -1,0 +1,538 @@
+/* Harbor sign-in opening screen — the working port of opening_screen_alt_preview.html.
+   Everything is scoped under .lg-page and an lg- prefix so it can never collide with
+   the app's utility classes. The mark's own draw/intro CSS lives in index.css
+   (.harbor-mark/.hmark-dock); this file holds the page, the choreography gates and
+   the sign-in card.
+
+   Stage machine (data-stage on .lg-page, driven by Login.jsx):
+     boot    — shell hidden; the opening is being posed (never painted)
+     intro   — mark + wordmark posed at page centre, card and mountain hidden
+     home    — the unit glides home; card + mountain fade in, reveal delays run
+     settled — the finished page (either after the opening or an instant skip)        */
+
+.lg-page {
+  --lg-bg: #EAF2F2;
+  --lg-card: #FFFFFF;
+  --lg-ink: #0B1B26;
+  --lg-muted: #2C4552;
+  --lg-subtle: #5E7683;
+  --lg-border: #C9D8DA;
+  --lg-dark: #0F2D3F;
+  --lg-dark-hover: #0A2333;
+  --lg-teal: #1F8A7D;
+  --lg-teal-soft: #7FD1C7;
+  --lg-radius-card: 18px;
+  --lg-radius-input: 9px;
+  --lg-shadow-card: 0 2px 8px rgba(11, 27, 38, 0.04), 0 24px 54px -12px rgba(11, 27, 38, 0.12);
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  padding: clamp(24px, 4vw, 48px) 24px clamp(36px, 5.5vw, 64px);
+  background: var(--lg-bg);
+  color: var(--lg-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.lg-page ::selection { background: rgba(31, 138, 125, 0.22); }
+
+/* Mountain Backdrop — the loaded photograph, masked into a soft horizon */
+.lg-backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: clamp(320px, 46vh, 480px);
+  pointer-events: none;
+  z-index: 1;
+  background-image: url('../assets/mountain.jpg');
+  background-size: cover;
+  background-position: left bottom;
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+  animation: lg-bgdrift 26s ease-in-out infinite alternate;
+}
+
+@keyframes lg-bgdrift {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-8px) scale(1.04); }
+}
+
+/* Central Split Hero Container */
+.lg-shell {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1040px;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: flex-start;
+  gap: clamp(36px, 6.5vw, 84px);
+  margin: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Stage gates.  boot hides the shell before the pose is measured (no first-frame
+   flash); intro hides card + mountain. The reveal transitions are declared ONLY
+   for home/settled, so entering intro snaps them hidden instead of fading them
+   out visibly during the opening — same trick as body:not(.intro) in the preview.
+   -------------------------------------------------------------------------- */
+.lg-page[data-stage='boot'] .lg-shell { visibility: hidden; }
+.lg-page[data-stage='intro'] .lg-cardcol { opacity: 0; pointer-events: none; }
+.lg-page[data-stage='intro'] .lg-backdrop { opacity: 0; }
+.lg-page[data-stage='home'] .lg-cardcol,
+.lg-page[data-stage='settled'] .lg-cardcol { transition: opacity 0.7s ease 0.05s; }
+.lg-page[data-stage='home'] .lg-backdrop,
+.lg-page[data-stage='settled'] .lg-backdrop { transition: opacity 0.9s ease; }
+
+/* Skip-to-settled: text reveals end at once; the mark's idle sway keeps running. */
+.lg-page[data-stage='settled'] .lg-rv { animation: none; }
+.lg-page[data-stage='settled'] .lg-l i { animation: none; transform: none; }
+
+/* ------------------------------- brand column ---------------------------- */
+/* Everything under the mark shares its centre line */
+.lg-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.lg-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.lg-icon {
+  width: clamp(120px, 15vw, 144px);
+  aspect-ratio: 1;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 14px 30px rgba(11, 27, 38, 0.24));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lg-icon:hover { transform: scale(1.035) translateY(-2px); }
+.lg-icon .harbor-mark { width: 100%; height: 100%; display: block; }
+
+/* Wordmark from the logo kit: Sora, wide-tracked capitals, each letter rising */
+.lg-title {
+  margin: 0;
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(38px, 4.2vw, 46px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-right: -0.12em;
+  color: var(--lg-dark);
+  line-height: 1.12;
+  text-transform: uppercase;
+  font-synthesis: none;
+  white-space: nowrap;
+}
+
+.lg-w { display: inline-block; }
+.lg-l {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  letter-spacing: 0;
+  margin-right: 0.12em;
+}
+.lg-l i {
+  display: block;
+  font-style: normal;
+  transform: translateY(115%);
+  animation: lg-riseUp 0.5s calc(1.35s + var(--i) * 0.06s) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes lg-riseUp {
+  from { transform: translateY(115%); }
+  to { transform: none; }
+}
+
+.lg-sub {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #164A5E;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(234, 242, 242, 0.9);
+  --lg-d: 2.55s;
+}
+
+.lg-bar {
+  width: 32px;
+  height: 3.5px;
+  background-color: var(--lg-teal);
+  border-radius: 999px;
+  margin: 22px 0 18px;
+  --lg-d: 2.63s;
+}
+
+.lg-heading {
+  margin: 0;
+  font-size: 23px;
+  font-weight: 800;
+  color: #0A2333;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 1px rgba(234, 242, 242, 0.85);
+  --lg-d: 2.71s;
+}
+.lg-heading .lg-nowrap { white-space: nowrap; color: var(--lg-teal); }
+
+.lg-body {
+  margin: 8px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: #223E4C;
+  font-weight: 550;
+  max-width: 330px;
+  text-shadow: 0 1px 2px rgba(234, 242, 242, 0.9);
+  --lg-d: 2.79s;
+}
+
+/* Staggered reveal, values shared with the preview */
+@keyframes lg-fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lg-rv { animation: lg-fadeUp 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) var(--lg-d, 1.5s) both; }
+
+/* ------------------------------- sign-in card ---------------------------- */
+.lg-cardcol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lg-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--lg-card);
+  border-radius: var(--lg-radius-card);
+  box-shadow: var(--lg-shadow-card);
+  border: 1px solid rgba(201, 216, 218, 0.85);
+  padding: clamp(36px, 4.5vw, 48px) clamp(30px, 4vw, 40px);
+}
+
+.lg-cardTitle {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  color: var(--lg-ink);
+  line-height: 1.25;
+  --lg-d: 2.30s;
+}
+
+.lg-cardDesc {
+  margin: 8px 0 28px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--lg-muted);
+  line-height: 1.45;
+  --lg-d: 2.38s;
+}
+
+.lg-form { display: flex; flex-direction: column; gap: 18px; }
+
+.lg-ig1 { --lg-d: 2.46s; }
+.lg-ig2 { --lg-d: 2.54s; }
+.lg-btn { --lg-d: 2.62s; }
+.lg-trustWrap { --lg-d: 2.78s; }
+
+/* High-contrast form fields */
+.lg-ig {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.lg-ii {
+  position: absolute;
+  left: 15px;
+  color: var(--lg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: color 0.18s ease;
+}
+
+.lg-ig:focus-within .lg-ii { color: var(--lg-teal); }
+
+.lg-if {
+  width: 100%;
+  height: 50px;
+  padding: 0 44px;
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--lg-ink);
+  background: #FFFFFF;
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-radius-input);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lg-if::placeholder { color: #6E838E; font-weight: 450; }
+.lg-if:hover { border-color: #A5BABF; }
+.lg-if:focus { border-color: var(--lg-dark); box-shadow: 0 0 0 3.5px rgba(15, 45, 63, 0.09); }
+
+/* Keep browser-autofilled fields on the same visual system */
+.lg-if:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset;
+  -webkit-text-fill-color: var(--lg-ink);
+  transition: background-color 999999s ease-out;
+}
+
+/* Show/Hide Password */
+.lg-eye {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: 0;
+  padding: 6px;
+  color: var(--lg-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.lg-eye:hover { color: var(--lg-ink); }
+.lg-eye:active { transform: scale(0.88); }
+
+/* Caps Lock notice while typing the password */
+.lg-caps {
+  position: absolute;
+  left: 2px;
+  top: 100%;
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #A16207;
+  line-height: 1;
+}
+
+.lg-caps::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #A16207;
+  flex-shrink: 0;
+}
+
+/* Visually hidden labels — present for assistive tech, not rendered */
+.lg-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Visible labels, with "Forgot password?" riding on the password label's row */
+.lg-field { position: relative; display: flex; flex-direction: column; gap: 7px; }
+.lg-labelRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lg-label { font-size: 13px; font-weight: 650; color: var(--lg-ink); letter-spacing: -0.005em; }
+.lg-if[aria-invalid='true'] { border-color: #B3271E; box-shadow: 0 0 0 3.5px rgba(179, 39, 30, 0.08); }
+.lg-if:disabled { background: #F4F7F8; color: var(--lg-muted); }
+
+.lg-hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--lg-subtle);
+  transition: color 0.2s ease;
+}
+.lg-hint svg { opacity: 0.35; transition: opacity 0.2s ease; }
+.lg-hint.ok { color: var(--lg-teal); font-weight: 600; }
+.lg-hint.ok svg { opacity: 1; }
+
+.lg-note { margin: 0; font-size: 13px; font-weight: 550; color: var(--lg-teal); }
+.lg-formErr {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #FDF1F0;
+  border: 1px solid #F3CFCB;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #B3271E;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  animation: lg-shake 0.32s ease;
+}
+.lg-formErr .lg-link { font-size: 13.5px; }
+@keyframes lg-shake {
+  0%, 100% { transform: none; }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Text-style actions: Forgot password?, Create a new business account, Sign in */
+.lg-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--lg-teal);
+  cursor: pointer;
+  border-radius: 4px;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.lg-link:hover { color: var(--lg-dark); text-decoration: underline; }
+.lg-link:focus-visible { outline: 2px solid var(--lg-teal); outline-offset: 2px; }
+.lg-link:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+.lg-linkSm { font-size: 12.5px; }
+
+/* Mode switch at the foot of the card */
+.lg-switch {
+  margin: 24px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid rgba(201, 216, 218, 0.7);
+  text-align: center;
+  font-size: 14px;
+  color: var(--lg-muted);
+  --lg-d: 2.70s;
+}
+
+/* Heading re-enters when switching between sign-in and create */
+.lg-swap { animation: lg-fadeUp 0.35s ease both; }
+
+.lg-arrow { transition: transform 0.2s ease; }
+.lg-btn:hover .lg-arrow { transform: translateX(3px); }
+.lg-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  animation: lg-spin 0.7s linear infinite;
+}
+@keyframes lg-spin { to { transform: rotate(360deg); } }
+
+/* Primary button, with a light sweep on hover */
+.lg-btn {
+  margin-top: 6px;
+  width: 100%;
+  height: 50px;
+  background-color: var(--lg-dark);
+  color: #FFFFFF;
+  border: 0;
+  border-radius: var(--lg-radius-input);
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.lg-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -45%;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.lg-btn:hover::after { left: 115%; }
+.lg-btn:hover { background-color: var(--lg-dark-hover); box-shadow: 0 4px 14px rgba(15, 45, 63, 0.22); }
+.lg-btn:active { transform: translateY(1px); }
+.lg-btn.busy { opacity: 0.85; cursor: default; }
+.lg-btn.done { background-color: var(--lg-teal-soft); color: var(--lg-dark); }
+.lg-btn.done:hover { background-color: var(--lg-teal-soft); box-shadow: none; }
+.lg-check { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* Trust statement under the card — bare text, no pill */
+.lg-trustWrap {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.lg-trust {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 550;
+  color: #1B3D4C;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.lg-trust svg { width: 15px; height: 15px; color: var(--lg-teal); flex-shrink: 0; }
+
+@media (max-width: 840px) {
+  .lg-shell {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    max-width: 440px;
+  }
+  .lg-bar { margin: 24px 0 20px; }
+  .lg-backdrop { height: 300px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-rv,
+  .lg-l i {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .lg-backdrop, .lg-swap, .lg-formErr { animation: none !important; }
+}

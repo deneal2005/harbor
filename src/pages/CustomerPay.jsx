@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { BusinessMark } from '../components/BusinessMark.jsx';
+import { HarborLockup } from '../components/HarborLockup.jsx';
 import { Qr } from '../components/Qr.jsx';
 import { Button, Card, Field, Money, Notice, inputCls } from '../components/ui.jsx';
 import { useErrorText } from '../hooks/useErrorText.js';
@@ -93,6 +94,9 @@ export default function CustomerPay() {
           </>
         )}
         <p className="text-sm text-muted">{t('cpay.contact', { owner: b.owner, phone: b.phone, email: b.email })}</p>
+        <div className="flex justify-center pt-2">
+          <HarborLockup flat markClass="h-4 w-4" wordClass="text-[11px]" gapClass="gap-1.5" />
+        </div>
       </div>
     </main>
   );

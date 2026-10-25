@@ -366,6 +366,38 @@ export default {
   'forecast.operating': "संचालन",
   'forecast.tax': "टैक्स",
   'forecast.other': "अन्य",
+
+  // साइन-इन ओपनिंग स्क्रीन और डिवाइस सेशन
+  'login.wordmark': 'Harbor',
+  'login.sub': 'इनवॉइस, वसूली और नकदी-प्रवाह',
+  'login.tagline1': 'बिल बनाएँ। वसूली करें।', 'login.tagline2': 'आगे रहें।',
+  'login.pitch': 'GST इनवॉइस बनाएँ, बकाया भुगतान का पीछा करें और नकदी की कमी को हफ़्तों पहले देखें।',
+  'login.title': 'Harbor में साइन इन करें', 'login.desc': 'अपने व्यवसाय के वर्कस्पेस में जारी रखें।',
+  'login.setupTitle': 'नया व्यवसाय खाता बनाएँ', 'login.setupDesc': 'एक मिनट में अपना वर्कस्पेस तैयार करें। आपकी किताबें इसी डिवाइस पर रहती हैं।',
+  'login.email': 'ईमेल पता', 'login.workEmail': 'व्यवसाय ईमेल', 'login.emailPh': 'you@business.com',
+  'login.pwd': 'पासवर्ड', 'login.newPwd': 'पासवर्ड बनाएँ', 'login.pwdPh': 'अपना पासवर्ड डालें', 'login.pwdHint': 'कम-से-कम {min} अक्षर',
+  'login.signin': 'साइन इन करें', 'login.signingIn': 'साइन इन हो रहा है…',
+  'login.create': 'खाता बनाएँ', 'login.creating': 'आपका खाता बन रहा है…',
+  'login.done': 'आपका स्वागत है', 'login.created': 'सब तैयार है',
+  'login.newHere': 'Harbor पर नए हैं?', 'login.toSetup': 'नया व्यवसाय खाता बनाएँ',
+  'login.haveAccount': 'पहले से खाता है?', 'login.toSignin': 'साइन इन करें',
+  'login.forgot': 'पासवर्ड भूल गए?',
+  'login.forgotTitle': 'अपना पासवर्ड रीसेट करें',
+  'login.forgotBody': 'Harbor लोकल-फ़र्स्ट है: आपका पासवर्ड किसी सर्वर पर नहीं होता, इसलिए रीसेट ईमेल नहीं आता। आप यहाँ सहेजा पासवर्ड हटाकर नया रख सकते हैं — इस डिवाइस पर पहले से मौजूद व्यवसाय डेटा पहले जैसा ही रहेगा।',
+  'login.removeKey': 'पासवर्ड हटाएँ',
+  'login.removedNote': 'पासवर्ड हट गया। वर्कस्पेस खोलने के लिए नया पासवर्ड रखें।',
+  'login.showPwd': 'पासवर्ड दिखाएँ', 'login.hidePwd': 'पासवर्ड छिपाएँ',
+  'login.capsLock': 'Caps Lock चालू है',
+  'login.err.email': 'मान्य ईमेल पता डालें।',
+  'login.err.weak': 'पासवर्ड में कम-से-कम {min} अक्षर रखें।',
+  'login.err.badLogin': 'ईमेल या पासवर्ड गलत है।',
+  'login.err.noPwd': 'अपना पासवर्ड डालें।',
+  'login.err.noAccount': 'इस डिवाइस पर अभी कोई Harbor खाता नहीं है।',
+  'login.err.exists': 'इस डिवाइस पर पहले से एक Harbor खाता है।',
+  'login.trust': 'लोकल-फ़र्स्ट और निजी: आपकी किताबें हमेशा आपके ही डिवाइस पर रहती हैं।',
+  'session.signedInAs': 'इस डिवाइस पर {email} के रूप में साइन इन है।',
+  'session.account': 'खाता',
+  'session.signOut': 'साइन आउट करें', 'session.signOutHint': 'साइन आउट करने पर यह वर्कस्पेस आपके पासवर्ड से बंद हो जाता है। डेटा इसी डिवाइस पर रहता है; दोबारा साइन इन करने पर मिलेगा।',
 };
 
 // "सरल भाषा" मोड: समझाने वाली स्क्रीन के लिए आसान रोज़मर्रा की भाषा।
@@ -395,4 +427,5 @@ export const simple = {
   'pay.subtitle': 'बैंक में आई राशि को सही इनवॉइस से जोड़ें, फिर अपनी किताब में पुष्टि करें।',
   'pay.review': 'आपकी जाँच बाकी राशि',
   'pay.noneImport': 'जाँच के लिए कोई बैंक राशि नहीं। भुगतान ढूँढ़ने के लिए बैंक स्टेटमेंट लोड करें।',
+
 };

@@ -365,6 +365,38 @@ export default {
   'forecast.operating': "Operating",
   'forecast.tax': "Tax",
   'forecast.other': "Other",
+
+  // Sign-in opening screen and device session
+  'login.wordmark': 'Harbor',
+  'login.sub': 'Invoices, collections & cash flow',
+  'login.tagline1': 'Bill. Collect.', 'login.tagline2': 'Stay ahead.',
+  'login.pitch': 'Raise GST invoices, chase late payments and spot cash gaps weeks before they hit.',
+  'login.title': 'Sign in to Harbor', 'login.desc': 'Continue to your business workspace.',
+  'login.setupTitle': 'Create a new business account', 'login.setupDesc': 'Set up your workspace in under a minute. Your books stay on this device.',
+  'login.email': 'Email address', 'login.workEmail': 'Business email', 'login.emailPh': 'you@business.com',
+  'login.pwd': 'Password', 'login.newPwd': 'Create a password', 'login.pwdPh': 'Enter your password', 'login.pwdHint': 'At least {min} characters',
+  'login.signin': 'Sign in', 'login.signingIn': 'Signing in…',
+  'login.create': 'Create account', 'login.creating': 'Creating your account…',
+  'login.done': 'Welcome back', 'login.created': 'You’re all set',
+  'login.newHere': 'New to Harbor?', 'login.toSetup': 'Create a new business account',
+  'login.haveAccount': 'Already have an account?', 'login.toSignin': 'Sign in',
+  'login.forgot': 'Forgot password?',
+  'login.forgotTitle': 'Reset your password',
+  'login.forgotBody': 'Harbor is local-first: no server holds your password, so there is no reset email. You can clear the saved password here and set a new one — the business data already on this device stays exactly as it is.',
+  'login.removeKey': 'Clear password',
+  'login.removedNote': 'Password cleared. Set a new one to unlock your workspace.',
+  'login.showPwd': 'Show password', 'login.hidePwd': 'Hide password',
+  'login.capsLock': 'Caps Lock is on',
+  'login.err.email': 'Enter a valid email address.',
+  'login.err.weak': 'Use at least {min} characters for the password.',
+  'login.err.badLogin': 'Wrong email or password.',
+  'login.err.noPwd': 'Enter your password.',
+  'login.err.noAccount': 'No Harbor account on this device yet.',
+  'login.err.exists': 'This device already has a Harbor account.',
+  'login.trust': 'Local-first and private: your books stay on your own device, always.',
+  'session.signedInAs': 'Signed in as {email} on this device.',
+  'session.account': 'Account',
+  'session.signOut': 'Sign out', 'session.signOutHint': 'Signing out locks this workspace behind your password. Your data stays on this device; sign in again to reach it.',
 };
 
 // "Simple language" mode (Settings): plain everyday wording for explanatory screens.
@@ -394,5 +426,6 @@ export const simple = {
   'pay.subtitle': 'Match money that came into your bank with the right invoices, then confirm it in your books.',
   'pay.review': 'Money waiting for your check',
   'pay.noneImport': 'No bank money is waiting. Load a bank statement to look for payments.',
+
 };
 

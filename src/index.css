@@ -79,11 +79,132 @@ dialog::backdrop { background: rgb(11 18 32 / 0.45); backdrop-filter: blur(2px);
 /* Animations are part of the product; data-motion="off" (low-end device, or chosen in Settings) disables them. */
 :root[data-motion='off'] *, :root[data-motion='off'] *::before, :root[data-motion='off'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 
+/* Brand wordmark from the logo kit: Sora, bold, wide-tracked capitals.
+   Letter-spacing trails the last cap, so compensated with a negative margin —
+   otherwise centered lockups (print footers, the customer page) sit a hair off true center. */
+.brand-word {
+  font-family: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-synthesis: none;
+  margin-right: -0.14em;
+}
+
+/* ==========================================================================
+   Harbor mark effects (from the alt-one opening screen kit, see HarborMark.jsx).
+   A bare mark is the settled logo: awning and receipt painted in full, rows on,
+   nothing moving. The hmark-dock class plays the opening once (awning paints ->
+   receipt is cut from the roll -> the rows print one by one -> a light passes
+   over the glass -> the receipt settles), then the receipt sways in a sea
+   breeze forever and the tile rides the swell. hmark-busy keeps the rows
+   printing one after another while something runs. transform-box keeps every
+   transform on the part's own box, so one set of keyframes fits any size.
+   ========================================================================== */
+.harbor-mark .aw, .harbor-mark .rct {
+  fill: none;
+  stroke-width: 4.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.harbor-mark--tile .aw, .harbor-mark--tile .rct { stroke: #EAF2F2; }
+.harbor-mark--flat .aw, .harbor-mark--flat .rct { stroke: #0F2D3F; }
+.harbor-mark .sheen { opacity: 0; }
+.harbor-mark .rctg {
+  transform-box: fill-box;
+  transform-origin: 50% 12%;
+  filter: drop-shadow(0 2.5px 3px rgb(6 18 28 / 0.4));
+}
+.hmark-dock { animation: harbor-bob 3.5s 3s ease-in-out infinite alternate; }
+
+/* The opening: strokes hidden behind the dash until drawn; rows start blank. */
+.hmark-dock .aw, .hmark-dock .rct {
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+}
+.hmark-dock .tl {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+}
+
+/* Paint-on: the awning first, then the receipt cut from the paper roll. */
+@keyframes harbor-draw {
+  to { stroke-dashoffset: 0; }
+}
+/* The dot-matrix print: rows stretch out of the paper as they ink in. */
+@keyframes harbor-print {
+  0% { opacity: 0; transform: scaleX(0.2); }
+  55% { opacity: 1; transform: scaleX(1.06); }
+  100% { opacity: 1; transform: none; }
+}
+/* Paper-settle bounce once on landing, then the sea-breeze sway, forever. */
+@keyframes harbor-settle {
+  0% { transform: translateY(0); }
+  38% { transform: translateY(1.7px); }
+  72% { transform: translateY(-0.9px); }
+  100% { transform: translateY(0); }
+}
+@keyframes harbor-hang {
+  0%, 100% { transform: rotate(0deg); }
+  26% { transform: rotate(1.3deg); }
+  56% { transform: rotate(-1deg); }
+  84% { transform: rotate(0.4deg); }
+}
+/* Marquee sheen: one quiet light passes across the tile. */
+@keyframes harbor-sheen {
+  0% { transform: translateX(-34px); opacity: 0; }
+  18% { opacity: 0.9; }
+  85% { opacity: 0.9; }
+  100% { transform: translateX(114px); opacity: 0; }
+}
+@keyframes harbor-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2.5px); }
+}
+/* Signing-in state: the clerk keeps printing the rows. */
+@keyframes harbor-rowpulse {
+  0%, 100% { opacity: 1; }
+  40% { opacity: 0.35; }
+}
+
+.hmark-dock .aw { animation: harbor-draw 0.6s 0.1s cubic-bezier(0.3, 0.7, 0.3, 1) forwards; }
+.hmark-dock .rct { animation: harbor-draw 0.95s 0.6s cubic-bezier(0.45, 0.5, 0.35, 1) forwards; }
+.hmark-dock .tl1 { animation: harbor-print 0.45s 1.55s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .tl2 { animation: harbor-print 0.45s 1.74s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .tl3 { animation: harbor-print 0.45s 1.93s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+.hmark-dock .rctg { animation: harbor-settle 0.5s 0.15s ease-out both, harbor-hang 6.5s 0.8s ease-in-out infinite; }
+.hmark-dock .sheen { animation: harbor-sheen 1.25s 0.9s cubic-bezier(0.35, 0.1, 0.55, 0.9) both; }
+.hmark-busy .tl1 { animation: harbor-rowpulse 1.05s ease-in-out infinite; }
+.hmark-busy .tl2 { animation: harbor-rowpulse 1.05s 0.18s ease-in-out infinite; }
+.hmark-busy .tl3 { animation: harbor-rowpulse 1.05s 0.36s ease-in-out infinite; }
+.hmark-busy .sheen { animation: none; }
+
+/* Reduced motion: no opening, no sway — the settled mark, fully drawn. */
+@media (prefers-reduced-motion: reduce) {
+  .hmark-dock .aw, .hmark-dock .rct { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+  .hmark-dock .tl { opacity: 1; transform: none; animation: none; }
+  .hmark-dock, .hmark-dock .rctg, .hmark-dock .sheen { animation: none; }
+  .hmark-busy .tl { animation: none; }
+}
+
+/* The app's motion kill switch must land on the same settled mark — the opening's
+   hidden start states (dash, blank rows) are neutralized or the tile would
+   render with an empty sticker sheet. */
+:root[data-motion='off'] .hmark-dock .aw, :root[data-motion='off'] .hmark-dock .rct { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+:root[data-motion='off'] .hmark-dock .tl { opacity: 1; transform: none; animation: none; }
+:root[data-motion='off'] .hmark-dock, :root[data-motion='off'] .hmark-dock .rctg, :root[data-motion='off'] .hmark-dock .sheen { animation: none; }
+:root[data-motion='off'] .hmark-busy .tl { animation: none; }
+
+/* Hidden on screen, shown on paper (small Harbor lockup at the foot of printed documents). */
+.print-only { display: none; }
+
 /* Print: only the document, on A4. */
 @page { size: A4; margin: 14mm; }
 @media print {
   body { background: #fff; font-size: 11pt; }
   .no-print { display: none !important; }
+  .print-only { display: block; }
   .print-sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; padding: 0 !important; max-width: none !important; }
   a { color: inherit; text-decoration: none; }
   tr { page-break-inside: avoid; }
