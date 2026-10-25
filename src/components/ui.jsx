@@ -8,7 +8,7 @@ import { useCountUp } from '../hooks/useCountUp.js';
 
 export function Page({ title, subtitle, actions, children, eyebrow }) {
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12">
+    <div className="mx-auto w-full max-w-7xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-8 lg:pb-12">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           {eyebrow && <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-faint">{eyebrow}</div>}
@@ -119,7 +119,7 @@ export function Tip({ text }) {
   return (
     <span className="relative inline-flex">
       <button type="button" aria-label={text} aria-describedby={open ? id : undefined} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
-        onBlur={() => setOpen(false)} className="inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-faint hover:bg-ink/5 hover:text-ink">ⓘ</button>
+        onBlur={() => setOpen(false)} className="relative inline-flex h-6 w-6 items-center justify-center rounded-full text-xs text-faint before:absolute before:-inset-2.5 hover:bg-ink/5 hover:text-ink">ⓘ</button>
       {open && <span role="tooltip" id={id} className="animate-fade absolute left-0 top-7 z-30 w-64 rounded-xl border border-line bg-white p-3 text-sm font-normal leading-snug text-ink shadow-[var(--shadow-pop)]">{text}</span>}
     </span>
   );
@@ -200,7 +200,7 @@ export function Segmented({ value, onChange, options, label, size = 'md', dark }
     <div role="radiogroup" aria-label={label} className={cx('inline-flex rounded-xl p-1', dark ? 'bg-white/10' : 'bg-ink/5')}>
       {options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={value === o.value} aria-label={o.label} title={o.label} onClick={() => onChange(o.value)}
-          className={cx('rounded-lg font-medium transition', size === 'sm' ? 'min-h-9 min-w-9 px-2.5 text-sm' : 'min-h-10 px-3 text-sm',
+          className={cx('rounded-lg font-medium transition', size === 'sm' ? 'min-h-9 min-w-9 px-2.5 text-sm pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-10 px-3 text-sm pointer-coarse:min-h-11',
             value === o.value ? (dark ? 'bg-white text-night shadow-sm' : 'bg-white text-ink shadow-sm') : (dark ? 'text-white/75 hover:text-white' : 'text-muted hover:text-ink'))}>
           {o.short ?? o.label}
         </button>
